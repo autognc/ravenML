@@ -10,7 +10,7 @@ setup(
     ],
     entry_points='''
       [console_scripts]
-      raven=raven:cli
+      raven=raven.cli:cli
     ''',
 )
       
