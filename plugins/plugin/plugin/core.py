@@ -1,9 +1,13 @@
 import click
+import raven.train.options
 
-@click.group()
-def plugin():
-    click.echo("Core click")
+@click.group(help='Training plugin commands.')
+@click.pass_context
+@raven.train.options.kfold_opt
+def plugin(ctx, kfold):
+    pass
     
 @plugin.command()
-def print():
-    click.echo("print core")
+@click.pass_context
+def print(ctx):
+    click.echo('Test plugin print')

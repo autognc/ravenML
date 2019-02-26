@@ -1,9 +1,13 @@
 import click
+import raven.train.options
 
-@click.group()
-def semantic():
-    click.echo("Semantic")
+@click.group(help='Semantic training commands.')
+@click.pass_context
+@raven.train.options.kfold_opt
+def semantic(ctx, kfold):
+    pass
     
 @semantic.command()
-def print():
-    click.echo("print semantic")
+@click.pass_context
+def print(ctx):
+    click.echo('Test semantic print')
