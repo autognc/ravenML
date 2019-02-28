@@ -13,16 +13,17 @@ set -o nounset      # Treat unset variables and parameters other than the specia
                     # ‘@’ or ‘*’ as an error when performing parameter expansion.
 
 echo "Activating raven conda environment..."
+echo "dum change"
 # grab available conda envs
 ENVS=$(conda env list | awk '{print $1}' )
 # attempt to source environment
-if [[ $ENVS = *"raven"* ]]; then
-   source activate raven
-   echo "Successfully activated raven environment."
-else 
-   echo "Error: please install the raven conda environment on your system."
-   exit
-fi;
+# if [[ $ENVS = *"raven"* ]]; then
+#    source activate raven
+#    echo "Successfully activated raven environment."
+# else 
+#    echo "Error: please install the raven conda environment on your system."
+#    exit
+# fi;
 
 # determine if we are installing or uninstalling
 install=1
