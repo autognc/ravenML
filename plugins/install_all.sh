@@ -13,7 +13,6 @@ set -o nounset      # Treat unset variables and parameters other than the specia
                     # ‘@’ or ‘*’ as an error when performing parameter expansion.
 
 echo "Activating raven conda environment..."
-echo "dum change"
 # grab available conda envs
 ENVS=$(conda env list | awk '{print $1}' )
 # attempt to source environment
@@ -50,3 +49,4 @@ else
         fi
     done
 fi
+##
