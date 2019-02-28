@@ -1,11 +1,11 @@
 from setuptools import setup
 
 setup(
-    name='semantic',
+    name='raven_tf_od',
     version='0.1',
-    packages=['semantic'],
+    packages=['raven_tf_od'],
     entry_points='''
         [raven.plugins.train]
-        semantic=semantic.core:semantic
+        tf_od=raven_tf_od.core:tf_od
     '''
 )
