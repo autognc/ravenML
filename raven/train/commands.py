@@ -14,13 +14,15 @@ from PyInquirer import prompt
 
 @with_plugins(iter_entry_points('raven.plugins.train'))
 @click.group()
-# @click.option('-k', '--kfold', is_flag=True)
 @click.pass_context
-# def train(ctx, kfold):
 def train(ctx):
-    # ctx.ensure_object(dict)
-    # ctx.obj['KFOLD'] = kfold
     pass
+
+@train.resultcallback()
+def process_result(result):
+    click.echo("I'm a callback!")
+    click.echo(result)
+    return result
 
 @train.command(help='List available training plugins.')
 def list():

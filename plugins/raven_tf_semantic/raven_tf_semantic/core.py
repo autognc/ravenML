@@ -10,4 +10,9 @@ def tf_semantic(ctx, kfold):
 @tf_semantic.command()
 @click.pass_context
 def print(ctx):
-    click.echo('Test semantic print')
+    return "print"
+    
+@tf_semantic.command()
+@click.pass_context
+def print2(ctx):
+    return "print 2"
