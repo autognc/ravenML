@@ -1,5 +1,5 @@
 '''
-Author(s):      Carson Schubert (carson.schubert14@gmail.com)
+Author(s):      Carson Schubert (carson.schubert14@gmail.com)  
 Date Created:   02/23/2019
 
 Command group for training in raven.
@@ -14,15 +14,17 @@ from PyInquirer import prompt
 
 @with_plugins(iter_entry_points('raven.plugins.train'))
 @click.group()
-# @click.option('-k', '--kfold', is_flag=True)
 @click.pass_context
-# def train(ctx, kfold):
 def train(ctx):
-    # ctx.ensure_object(dict)
-    # ctx.obj['KFOLD'] = kfold
+    '''
+    Train command group. Just needs to exist, everything flows from this.
+    '''
     pass
 
 @train.command(help='List available training plugins.')
 def list():
+    '''
+    Lists mounted training plugins by name.
+    '''
     for entry in iter_entry_points(group='raven.plugins.train', name=None):
         print(entry.name)
