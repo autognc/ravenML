@@ -4,7 +4,7 @@ import boto3
 from pathlib import Path
 from tqdm import tqdm
 
-class Save(Utils):
+class Save(object):
     def __init__(self, upload_to_s3=True, 
                     bucket_name='Trained Model Artifacts', 
                     model_directory="~/trained_models"):
@@ -41,6 +41,9 @@ class Save(Utils):
 
         Args:
             t: a tqdm object that updates the progress bar
+        
+        Returns:
+            None
         """ 
         def inner(bytes_amount):
             t.update(bytes_amount)
@@ -66,11 +69,18 @@ class Save(Utils):
                     file_name = str(file.parts[-1])
                     file_size = file.stat().st_size
 
-                    with tqdm(filesize=file_size, desc=file_name, miniters=1) as t:                   
+                    with tqdm(total=file_size, desc=file_name, miniters=1) as t:                   
                         s3_bucket.upload_file(file_path, file_name, 
-                                              Callback=hook(t))
+                                              Callback=self.hook(t))
             
             except Exception as e:
                 print("Uh oh error occurred")
                 print(e)
+
+
+# if __name__ == "__main__":
+#     d = '/Users/pratyushsingh/Desktop/testing123'
+#     s = Save(bucket_name='testing-upload-module', 
+#                 model_directory=str(d))
+#     s.save_to_s3()
     
