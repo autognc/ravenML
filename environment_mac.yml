@@ -31,5 +31,6 @@ dependencies:
     - six==1.12.0
     - wcwidth==0.1.7
     - whaaaaat==0.5.2
+    - tqdm==4.31.1
 prefix: /home/carson/anaconda3/envs/raven
 
