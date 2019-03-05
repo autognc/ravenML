@@ -9,4 +9,5 @@ dependencies:
     - pyinquirer==1.0.3
     - tqdm==4.31.1
     - pytest==4.30
+    - boto3==1.8.7
 
