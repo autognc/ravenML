@@ -76,11 +76,4 @@ class Save(object):
             except Exception as e:
                 print("Uh oh error occurred")
                 print(e)
-
-
-# if __name__ == "__main__":
-#     d = '/Users/pratyushsingh/Desktop/testing123'
-#     s = Save(bucket_name='testing-upload-module', 
-#                 model_directory=str(d))
-#     s.save_to_s3()
     
