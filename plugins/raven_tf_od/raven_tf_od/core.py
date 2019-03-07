@@ -1,13 +1,21 @@
 import click
-import raven.train.options
+from raven.train.options import kfold_opt, pass_train
+from raven.train.interfaces import TrainInput, TrainOutput
 
 @click.group(help='TensorFlow Object Detection.')
 @click.pass_context
-@raven.train.options.kfold_opt
+@kfold_opt
 def tf_od(ctx, kfold):
     pass
     
 @tf_od.command()
+@pass_train
 @click.pass_context
-def print(ctx):
-    click.echo('Test TF OD print')
+def train(ctx, train: TrainInput):
+    # If the context has a TrainInput already, it is passed as "train"
+    # If it does not, the constructor is called AUTOMATICALLY
+    # by Click because the @pass_train decorator is set to ensure
+    # object creation
+    # after training, create an instance of TrainOutput and return it
+    result = TrainOutput()
+    return result
