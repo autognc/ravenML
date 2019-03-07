@@ -1,5 +1,5 @@
 '''
-Author(s):      Carson Schubert (carson.schubert14@gmail.com)
+Author(s):      Carson Schubert (carson.schubert14@gmail.com)  
 Date Created:   02/23/2019
 
 Command group for training in raven.
@@ -51,6 +51,9 @@ local_opt = click.option(
 @dataset_opt
 @local_opt
 def train(ctx, local, dataset):
+    '''
+    Train command group. Everything flows from this.
+    '''
     if ctx.obj['NO_USER']:
         # if no_user is true, make a TrainInput from the other flags
         ti = TrainInput(inquire=False)
@@ -69,5 +72,8 @@ def process_result(ctx, result: TrainOutput, local, dataset):
 
 @train.command(help='List available training plugins.')
 def list():
+    '''
+    Lists mounted training plugins by name.
+    '''
     for entry in iter_entry_points(group='raven.plugins.train', name=None):
         print(entry.name)

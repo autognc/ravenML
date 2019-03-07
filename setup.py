@@ -7,6 +7,7 @@ setup(
     packages=['raven'],
     install_requires=[
         'Click',
+        'click-plugins'
     ],
     entry_points='''
       [console_scripts]

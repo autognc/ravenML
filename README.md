@@ -1,6 +1,12 @@
 # raven
 Training CLI Tool
 
+## Installation
+You can install the raven pacakage from the root of this repository with the following command:
+```
+pip install --editable .
+```
+
 ## Commitizen
 We will use commitizen for all commit messages. The repository is set up to use
 commitizen via the `.czrc` file. If you have commitizen already installed globally,
