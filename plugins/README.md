@@ -252,6 +252,8 @@ from raven.train.interfaces import TrainInput, TrainOutput
 
 ### TrainInput
 Class whose objects contain all necessary information for a training plugin to actually train. 
+<!--- Add link to Sphinx documentation here in the future. --->
 
 ### TrainOutput
 Class whose objects contain all necessary information for Raven core to process and save or upload training artifacts.
+<!--- Add link to Sphinx documentation here in the future. --->
