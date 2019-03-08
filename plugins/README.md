@@ -2,7 +2,7 @@
 Default training plugins for Raven, and examples for making your own plugins.
 
 ## Structure
-All plugins are independent and separate Python packages with the follow structure:
+All plugins are independent and separate Python packages with the following structure:
 ```
 package_name/                   # name of the package, with underscores
     package_name/               # ''
@@ -40,7 +40,7 @@ pip-compile --out-file <prefix>.txt <prefix>.in
 ```
 
 ### install.sh
-An `install.sh` script should be written to handle all install logic and ensure 
+An `install.sh` script should be written to handle all install logic (including updating pip-compile created requirements files) and ensure 
 external dependenices (such as NVIDIA Drivers or additional packages) are met on install. When uninstalling, this script
 should **only** handle the uninstall logic for the package itself, not its dependenices. The reason for the difference in 
 behavior between install and uninstall is simple: Because many
@@ -65,8 +65,55 @@ It supports the same two flags as any `install.sh`:
 
 `install_all.sh` contains logic to ensure that if any plugins share dependencies with Raven core these dependencies
 remain met at the compeition of the pluigin uninstall. This is accomplished by verifying the environment against its
-`environment.yml` file after `install.sh -u` script is run for each plugin.
+`environment.yml` file once `install.sh -u` script is run for each plugin.
 
 ## Making a Plugin
 
+Create a plugin using the following steps:
 
+### 1. Create file structure.
+Every Raven training plugin will begin with the following file structure:
+```
+package_name/                   # name of the package, with underscores
+    package_name/               # ''
+        __init__.py             
+        core.py                 # core of plugin - contains command group 
+                                    entire plugin flows from
+    install.sh                  # install script for the plugin
+    requirements.in             # user created requirements file for CPU install
+    requirements-gui.in         # user created requirements file for GPU install
+    setup.py 
+```
+
+We will go through each of these files individually in the next steps.
+
+#### Inner `package_name/` directory
+This directory contains the source code for the plugin itself. Inside are two files:
+1. `__init__.py`: empty file which marks this at a python module.
+2. `core.py`: core of the plugin where the top level command group is located. Go from the skeleton below:
+```css
+import click
+from raven.train.options import kfold_opt, pass_train
+from raven.train.interfaces import TrainInput, TrainOutput
+
+@click.group(help='Top level command group description')
+@click.pass_context
+@kfold_opt
+def <module_name_no_raven>(ctx, kfold):
+    pass
+    
+@<module_name_no_raven>.command()
+@pass_train
+@click.pass_context
+def train(ctx, train: TrainInput):
+    # If the context (ctx) has a TrainInput already, it is passed as "train"
+    # If it does not, the constructor is called AUTOMATICALLY
+    # by Click because the @pass_train decorator is set to ensure
+    # object creation, after which the created object is passed as "train"
+    # after training, create an instance of TrainOutput and return it
+    result = TrainOutput()
+    return result               # return result back up the command chain
+```
+`TrainInput` and `TrainOutput` are described in detail in the [Interfaces](#interfaces) section.
+
+#### `setup.py`
