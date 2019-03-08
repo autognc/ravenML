@@ -4,8 +4,8 @@ Default training plugins for Raven, and examples for making your own plugins.
 ## Structure
 All plugins are independent and separate Python packages with the following structure:
 ```
-package_name/                   # name of the package, with underscores
-    package_name/               # ''
+raven_package_name/                   # name of the package, with underscores
+    raven_package_name/               # ''
         __init__.py             
         core.py                 # core of plugin - contains command group 
                                     entire plugin flows from
@@ -13,7 +13,7 @@ package_name/                   # name of the package, with underscores
     requirements.in             # user created requirements file for CPU install
     requirements-gui.in         # user created requirements file for GPU install
     requirements.txt            # pip-compile created requirements file for CPU install
-    requirements-gui.txt        # pip-compile created requirements file for GPU install
+    requirements-gpu.txt        # pip-compile created requirements file for GPU install
     setup.py                    # python package setuptools
 ```
 Additional files, directories, and modules can be created as needed. Just be sure to include
@@ -25,14 +25,14 @@ requirements files rather than packages in `install_requires` in `setup.py`.
 We use [pip-compile](https://github.com/jazzband/pip-tools) to maintain all requirements with
 uninstall functionality. Developers should create **two files**:
 1. requirements.in
-2. requirements-gui.in
+2. requirements-gpu.in
 
 These files are manually maintained and include all python packages which the plugin
 depends on (such as tensorflow, pytorch, etc). Crucially, they do **not** contain 
 these packages' dependencies. `pip-compile` is then used on the `.in` files to create
 two files:
 1. requirements.txt
-2. requirements-gui.txt
+2. requirements-gpu.txt
 
 Which are created by the command:
 ```
@@ -74,24 +74,24 @@ Follow these steps to create a plugin.
 ### 1. Create file structure.
 Every Raven training plugin will begin with the following file structure:
 ```
-package_name/                   # name of the package, with underscores
-    package_name/               # ''
+raven_<plugin_name>/                   # name of the package, with underscores
+    raven_<plugin_name>/               # ''
         __init__.py             
         core.py                 # core of plugin - contains command group 
                                     entire plugin flows from
     install.sh                  # install script for the plugin
     requirements.in             # user created requirements file for CPU install
-    requirements-gui.in         # user created requirements file for GPU install
+    requirements-gpu.in         # user created requirements file for GPU install
     setup.py                    # python package setuptools
 ```
 
 We will go through each of these files individually.
 
-#### Inner `package_name/` directory
-This directory contains the source code for the plugin itself. Inside are two files:
+#### Inner `raven_<plugin_name>/` directory
+Contains the source code for the plugin itself. Inside are two files:
 1. `__init__.py`: empty file which marks this at a python module.
 2. `core.py`: core of the plugin where the top level command group is located. Go from the skeleton below:
-```css
+```python
 import click
 from raven.train.options import kfold_opt, pass_train
 from raven.train.interfaces import TrainInput, TrainOutput
@@ -99,10 +99,10 @@ from raven.train.interfaces import TrainInput, TrainOutput
 @click.group(help='Top level command group description')
 @click.pass_context
 @kfold_opt
-def <module_name_no_raven>(ctx, kfold):
+def <plugin_name>(ctx, kfold):
     pass
     
-@<module_name_no_raven>.command()
+@<plugin_name>.command()
 @pass_train
 @click.pass_context
 def train(ctx, train: TrainInput):
@@ -117,3 +117,109 @@ def train(ctx, train: TrainInput):
 `TrainInput` and `TrainOutput` are described in detail in the [Interfaces](#interfaces) section.
 
 #### `setup.py`
+Contains setuptools code for turning this plugin into a python package. Go from the skeleton below:
+```python
+from setuptools import setup
+
+setup(
+    name='raven_<plugin_name>',
+    version='0.1',
+    description='Training plugin for raven',
+    packages=['raven_<plugin_name>'],
+    install_requires=[
+        'Click',
+    ],
+    entry_points='''
+        [raven.plugins.train]
+        <plugin_name>=raven_<plugin_name>.core:<plugin_name>
+    '''
+)
+```
+
+#### `requirements.in` and `requirements-gpu.in`
+Contain all plugin Python dependencies. These should be manually created and updated.
+It is expected that these will largely overlap - however, keeping them separate is the
+cleanest way of doing things. Write these files exactly as you would a normal `requirements.txt`.
+There is no skeleton for these files. See [requirements](https://pip.pypa.io/en/stable/user_guide/#requirements-files) 
+information here.
+
+#### `install.sh`
+See [install_all.sh](###install_all.sh) section for description. Go from the skeleton below:
+```shell
+#!/usr/bin/env bash
+
+set -o errexit      # exit immediately if a pipeline returns non-zero status
+set -o pipefail     # Return value of a pipeline is the value of the last (rightmost) command to exit with a non-zero status, 
+                    # or zero if all commands in the pipeline exit successfully.
+set -o nounset      # Treat unset variables and parameters other than the special parameters 
+                    # ‘@’ or ‘*’ as an error when performing parameter expansion.
+
+# parse flags
+install=1
+requirements_prefix="requirements"
+while getopts "ugd" opt; do
+    case "$opt" in
+        u)
+            install=0
+            ;;
+        g)
+            requirements_prefix="requirements-gpu"
+            echo "-- GPU mode!"
+            ;;
+     esac
+done
+
+if [ $install -eq 1 ]; then
+    echo "Installing..."
+    pip-compile --output-file $requirements_prefix.txt $requirements_prefix.in
+    pip install -r $requirements_prefix.txt
+else
+    # NOTE: this does NOT clean up after the plugin (i.e, leaves plugin dependenices installed)
+    # To clean up, use the install_all.sh script at the root of the plugins/ directory
+    echo "Uninstalling..."
+    pip uninstall <plugin_name> -y
+fi
+
+```
+
+### 2. Write plugin specific code.
+Create additional files, directories, and modules as needed. Just be sure to include
+an `__init__.py` in every directory you create, and think in modules.  
+
+Consider creating a separate directory for each sub command group, structured as:
+```
+<command_group_name>/
+    __init__.py
+    commands.py
+```
+
+Go from the skeleton below for `commands.py`:
+```python
+import click
+
+### OPTIONS ###
+# put all local command options here
+
+
+### COMMANDS ###
+@click.group()
+@click.pass_context
+def <command_group_name>(ctx):
+    pass
+
+@<command_group_name>.command()
+def <command_name>():
+    click.echo('Sub command group command here!')
+```
+
+Within this directory you can create an `interfaces.py` file for any interfaces you want to expose
+from the command and an `options.py` file for any command options you want to expose.
+
+To import this sub command group in `<plugin_name>/<plugin_name>/core.py` you would put the following lines:
+```python
+from <plugin_name>.<command_group_name>.commands import <command_group_name>
+
+<plugin_name>.add_command(<command_group_name>)
+```
+
+
