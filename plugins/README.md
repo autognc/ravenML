@@ -69,7 +69,7 @@ remain met at the compeition of the pluigin uninstall. This is accomplished by v
 
 ## Making a Plugin
 
-Create a plugin using the following steps:
+Follow these steps to create a plugin.
 
 ### 1. Create file structure.
 Every Raven training plugin will begin with the following file structure:
@@ -82,10 +82,10 @@ package_name/                   # name of the package, with underscores
     install.sh                  # install script for the plugin
     requirements.in             # user created requirements file for CPU install
     requirements-gui.in         # user created requirements file for GPU install
-    setup.py 
+    setup.py                    # python package setuptools
 ```
 
-We will go through each of these files individually in the next steps.
+We will go through each of these files individually.
 
 #### Inner `package_name/` directory
 This directory contains the source code for the plugin itself. Inside are two files:
