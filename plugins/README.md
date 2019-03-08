@@ -39,7 +39,7 @@ Which are created by the command:
 pip-compile --out-file <prefix>.txt <prefix>.in
 ```
 
-### install.sh
+### install.sh [install]
 An `install.sh` script should be written to handle all install logic (including updating pip-compile created requirements files) and ensure 
 external dependenices (such as NVIDIA Drivers or additional packages) are met on install. When uninstalling, this script
 should **only** handle the uninstall logic for the package itself, not its dependenices. The reason for the difference in 
@@ -56,7 +56,7 @@ All `install.sh` scripts should support two flags:
 - `-u`: uninstall. Passed to uninstall the plugin itself.
 - `-g`: GPU install. Can be paired with `-u` for uninstalling a GPU install.
 
-### <a name="install_all.sh"></a> install_all.sh
+### install_all.sh
 Installs all plugins in this directory using their `install.sh` scripts. Mostly a convenience item when installing.
 When uninstalling, this script should be used **exclusively** in place of any individual plugin's `install.sh` script.
 It supports the same two flags as any `install.sh`:
@@ -144,7 +144,7 @@ There is no skeleton for these files. See [requirements](https://pip.pypa.io/en/
 information here.
 
 #### `install.sh`
-See [install_all.sh](###install_all.sh) section for description. Go from the skeleton below:
+See [install.sh](#install) section for description. Go from the skeleton below:
 ```shell
 #!/usr/bin/env bash
 
