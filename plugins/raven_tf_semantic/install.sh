@@ -1,9 +1,8 @@
 ##
 # Author(s):        Carson Schubert (carson.schubert14@gmail.com)
-# Date Created:     02/25/2019
+# Date Created:     03/07/2019
 #
-# Install/uninstall script for raven plugins.
-# NOTE: This script MUST be run from the plugins directory.
+# Install/uninstall script for raven TensorFlow Semantic Segmentation plugin.
 ##
 
 
@@ -26,35 +25,28 @@ set -o nounset      # Treat unset variables and parameters other than the specia
 #    exit
 # fi;
 
-# determine if we are installing or uninstalling
-install_flag=d
-gpu_flag=d
+# parse flags
+install=1
 requirements_prefix="requirements"
-while getopts "ug" opt; do
+while getopts "ugd" opt; do
     case "$opt" in
         u)
-            install_flag=u
+            install=0
             ;;
         g)
-            gpu_flag=g
             requirements_prefix="requirements-gpu"
+            echo "-- GPU mode!"
+            ;;
      esac
 done
 
-for f in * ; do
-    if [ -d ${f} ]; then
-        echo "Going on plugin $f..."
-        cd $f
-        ./install.sh -$install_flag -$gpu_flag
-        if [ "$install_flag" = "u" ]; then
-            echo "Cleaning up plugin dependencies..."
-            pip uninstall -r $requirements_prefix.txt -y
-        fi
-        cd - > /dev/null
-    fi
-done
-
-# ensure raven core environment dependencies are still met
-echo "Checking raven core dependencies..."
-cd ..
-conda env update -f environment.yml
+if [ $install -eq 1 ]; then
+    echo "Installing..."
+    pip-compile --output-file $requirements_prefix.txt $requirements_prefix.in
+    pip install -r $requirements_prefix.txt
+else
+    # NOTE: this does NOT clean up after the plugin (i.e, leaves plugin dependenices installed)
+    # To clean up, use the install_all.sh script at the root of the plugins/ directory
+    echo "Uninstalling..."
+    # pip uninstall raven-tf-semantic -y
+fi
