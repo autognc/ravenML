@@ -114,7 +114,7 @@ def train(ctx, train: TrainInput):
     result = TrainOutput()
     return result               # return result back up the command chain
 ```
-`TrainInput` and `TrainOutput` are described in detail in the [Interfaces](#interfaces) section.
+`TrainInput` and `TrainOutput` are described in detail in the [Interfaces](#standard-interfaces) section.
 
 #### `setup.py`
 Contains setuptools code for turning this plugin into a python package. Go from the skeleton below:
@@ -221,4 +221,37 @@ from <plugin_name>.<command_group_name>.commands import <command_group_name>
 
 <plugin_name>.add_command(<command_group_name>)
 ```
-## <a name="interfaces"></a> Standard Interfaces
+
+### 3. Install plugin
+**NOTE** You must be inside the Raven anaconda environment when performing this operation.
+
+Install the plugin using `install.sh`, using the `-g` flag if appropriate. At this point, if you run
+`pip list` you should see your plugin listed, with the underscores in its named replaced by dashes.
+
+At this point, your plugin should automatically load inside of Raven. Run `raven train list` to see 
+all installed plugins and verify that yours appears.
+
+### 4. (Optional) Test uninstalling plugin
+It is a good idea to test that your plugin can be properly uninstalled as well. Recall that to uninstall a plugin
+added to the Raven `plugins/` directory, you **must** use the `install_all.sh` script with the `-u` flag. 
+
+Note that if plugins are created outside of the `plugins/`, directory they cannot be uninstalled using the 
+`install_all.sh` script. There is no easy solution for this. It is up to the user to either leave plugin 
+dependencies installed in the environment, write additional scripts to ensure plugin depenency removal does 
+not impact other plugins, or some other manual solution.
+
+## Standard Interfaces
+Two classes define the **standard interface** between Raven core and training plugins:
+- `TrainInput`
+- `TrainOutput`
+
+Import them with the following code (also seen in the [example](#inner-raven_plugin_name-directory) for `core.py`):
+```python
+from raven.train.interfaces import TrainInput, TrainOutput
+```
+
+### TrainInput
+Class whose objects contain all necessary information for a training plugin to actually train. 
+
+### TrainOutput
+Class whose objects contain all necessary information for Raven core to process and save or upload training artifacts.
