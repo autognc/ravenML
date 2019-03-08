@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 ##
 # Author(s):        Carson Schubert (carson.schubert14@gmail.com)
 # Date Created:     02/25/2019
