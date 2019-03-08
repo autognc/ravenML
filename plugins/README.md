@@ -56,7 +56,7 @@ All `install.sh` scripts should support two flags:
 - `-u`: uninstall. Passed to uninstall the plugin itself.
 - `-g`: GPU install. Can be paired with `-u` for uninstalling a GPU install.
 
-### install_all.sh
+### <a name="install_all.sh"></a> install_all.sh
 Installs all plugins in this directory using their `install.sh` scripts. Mostly a convenience item when installing.
 When uninstalling, this script should be used **exclusively** in place of any individual plugin's `install.sh` script.
 It supports the same two flags as any `install.sh`:
@@ -221,5 +221,4 @@ from <plugin_name>.<command_group_name>.commands import <command_group_name>
 
 <plugin_name>.add_command(<command_group_name>)
 ```
-
-
+## <a name="interfaces"></a> Standard Interfaces
