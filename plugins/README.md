@@ -39,7 +39,7 @@ Which are created by the command:
 pip-compile --out-file <prefix>.txt <prefix>.in
 ```
 
-### install.sh [install]
+### install.sh
 An `install.sh` script should be written to handle all install logic (including updating pip-compile created requirements files) and ensure 
 external dependenices (such as NVIDIA Drivers or additional packages) are met on install. When uninstalling, this script
 should **only** handle the uninstall logic for the package itself, not its dependenices. The reason for the difference in 
@@ -144,7 +144,7 @@ There is no skeleton for these files. See [requirements](https://pip.pypa.io/en/
 information here.
 
 #### `install.sh`
-See [install.sh](#install) section for description. Go from the skeleton below:
+See [install.sh](#installsh) section for description. Go from the skeleton below:
 ```shell
 #!/usr/bin/env bash
 
