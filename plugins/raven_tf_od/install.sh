@@ -14,19 +14,6 @@ set -o pipefail     # Return value of a pipeline is the value of the last (right
 set -o nounset      # Treat unset variables and parameters other than the special parameters 
                     # ‘@’ or ‘*’ as an error when performing parameter expansion.
 
-# echo "Checking for active raven conda environment..."
-
-# grab available conda envs
-# ENVS=$(conda env list | awk '{print $1}' )
-# # attempt to source environment
-# if [[ $ENVS = *"raven"* ]]; then
-#    source activate raven
-#    echo "Successfully activated raven environment."
-# else 
-#    echo "Error: please install the raven conda environment on your system."
-#    exit
-# fi;
-
 # parse flags
 install=1
 requirements_prefix="requirements"
@@ -50,5 +37,5 @@ else
     # NOTE: this does NOT clean up after the plugin (i.e, leaves plugin dependenices installed)
     # To clean up, use the install_all.sh script at the root of the plugins/ directory
     echo "Uninstalling..."
-    # pip uninstall raven-tf-od -y
+    pip uninstall raven-tf-od -y
 fi
