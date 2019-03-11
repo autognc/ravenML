@@ -7,6 +7,7 @@ Main CLI entry point for raven.
 
 import click
 from raven.train.commands import train
+from raven.data.commands import data
 
 @click.group()
 def cli():
@@ -16,3 +17,4 @@ def cli():
     pass
 
 cli.add_command(train)
+cli.add_command(data)

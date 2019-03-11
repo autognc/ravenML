@@ -52,7 +52,7 @@ local_opt = click.option(
 @local_opt
 def train(ctx, local, dataset):
     '''
-    Train command group. Everything flows from this.
+    Training commands.
     '''
     if ctx.obj['NO_USER']:
         # if no_user is true, make a TrainInput from the other flags
@@ -70,10 +70,10 @@ def process_result(ctx, result: TrainOutput, local, dataset):
         click.echo('Upload model artifacts here.')
     return result
 
-@train.command(help='List available training plugins.')
+@train.command()
 def list():
     '''
-    Lists mounted training plugins by name.
+    List available training plugins by name.
     '''
     for entry in iter_entry_points(group='raven.plugins.train', name=None):
         print(entry.name)
