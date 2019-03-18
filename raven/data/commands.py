@@ -6,7 +6,6 @@ Command group for dataset exploration in raven.
 '''
 
 import click
-from raven.train.interfaces import TrainInput, TrainOutput
 
 # placerholder: will eventually hit AWS to find available datasets
 def get_datasets():

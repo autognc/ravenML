@@ -21,7 +21,7 @@ class TrainInput(object):
 
     Attributes:
         dataset: name of the dataset to be used
-        local: run in local mode or not
+        artifact_path: path to save artifacts. None if uploading to s3
     
     '''
     def __init__(self, inquire=True):
