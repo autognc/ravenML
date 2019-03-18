@@ -2,11 +2,11 @@ name: raven
 channels:
     - defaults
 dependencies:
-    - python=3.6.8
-    - pip:
-          - click==7.0
-          - click-plugins==1.0.4
-          - pyinquirer==1.0.3
-          - tqdm==4.31.1
-          - pytest==4.3.0
-          - boto3==1.8.7
+  - python=3.6.8
+  - pip:
+    - click==7.0
+    - click-plugins==1.0.4
+    - pyinquirer==1.0.3
+    - tqdm==4.31.1
+    - pytest==4.3.0
+    - boto3==1.8.7
