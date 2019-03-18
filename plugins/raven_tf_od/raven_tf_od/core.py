@@ -17,5 +17,7 @@ def train(ctx, train: TrainInput):
     # by Click because the @pass_train decorator is set to ensure
     # object creation
     # after training, create an instance of TrainOutput and return it
+    print(train.dataset)
+    print(train.artifact_path)
     result = TrainOutput()
     return result

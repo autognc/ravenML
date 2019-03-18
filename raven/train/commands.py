@@ -38,7 +38,7 @@ dataset_opt = click.option(
 )
 
 local_opt = click.option(
-    '-l', '--local', 'local', type=str, is_eager=True,
+    '-l', '--local', 'local', type=str, is_eager=True, default='None',
     help='Keep all model artifacts local.'
 )
 
@@ -56,9 +56,9 @@ def train(ctx, local, dataset):
     '''
     if ctx.obj['NO_USER']:
         # if no_user is true, make a TrainInput from the other flags
-        ti = TrainInput(inquire=False)
-        ti.artifact_path = local
-        ti.dataset = dataset 
+        if local == 'None': 
+            local = None
+        ti = TrainInput(inquire=False, dataset=dataset, artifact_path=local)
         # assign to context for use in plugin
         ctx.obj = ti
 
