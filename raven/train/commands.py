@@ -9,7 +9,7 @@ import click
 from pkg_resources import iter_entry_points
 from click_plugins import with_plugins
 from raven.train.interfaces import TrainInput, TrainOutput
-from raven.utils.dataset import get_dataset_names
+from raven.utils.dataset import get_dataset_names, get_dataset
     
 ### OPTIONS ###
 def no_user_callback(ctx, param, value):
@@ -28,8 +28,13 @@ no_user_opt = click.option(
 )
 
 # these commands must be eager so their values are available in the no_user_opt callback
+# dataset_opt = click.option(
+#     '-d', '--dataset', 'dataset', type=click.Choice(get_dataset_names()), is_eager=True,
+#     help='Dataset to use for training.'
+# )
+
 dataset_opt = click.option(
-    '-d', '--dataset', 'dataset', type=click.Choice(get_dataset_names()), is_eager=True,
+    '-d', '--dataset', 'dataset', type=str, is_eager=True,
     help='Dataset to use for training.'
 )
 
@@ -54,7 +59,7 @@ def train(ctx, local, dataset):
         # if no_user is true, make a TrainInput from the other flags
         if local == 'None': 
             local = None
-        ti = TrainInput(inquire=False, dataset=dataset, artifact_path=local)
+        ti = TrainInput(inquire=False, dataset=get_dataset(dataset), artifact_path=local)
         # assign to context for use in plugin
         ctx.obj = ti
 

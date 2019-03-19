@@ -7,6 +7,7 @@ Handles local file caching for raven.
 
 import os
 import shutil
+import click
 from pathlib import Path
 
 RAVEN_LOCAL_STORAGE_PATH = Path(os.path.expanduser('~/.raven-ml'))
@@ -32,4 +33,7 @@ def make_subpath(subpath):
     os.mkdir(RAVEN_LOCAL_STORAGE_PATH / Path (subpath))
     
 def clean():
-    shutil.rmtree(RAVEN_LOCAL_STORAGE_PATH)
+    try:
+        shutil.rmtree(RAVEN_LOCAL_STORAGE_PATH)
+    except FileNotFoundError:
+        click.echo('Nothing to clean.')

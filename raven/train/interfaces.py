@@ -2,15 +2,14 @@
 Author(s):      Carson Schubert (carson.schubert14@gmail.com)
 Date Created:   03/03/2019
 
-Contains the classes for interfacing with training plugins.
+Contains the classes for interfacing with training command group.
 '''
 
+from halo import Halo
 from raven.utils.question import user_input, user_selects, user_confirms
+from raven.utils.dataset import get_dataset_names, get_dataset
+from raven.data.interfaces import Dataset
 
-# placeholder: this will be replaced with calls to AWS to retrieve datasets
-def get_datasets():
-    return ['a','b','c']
-    
 class TrainInput(object):
     '''Represents a training input. Contains all plugin-independent information
     necessary for training. Plugins can define their own behavior for getting
@@ -22,7 +21,7 @@ class TrainInput(object):
             to populate TrainInput fields
 
     Attributes:
-        dataset: name of the dataset to be used
+        dataset: Dataset in use
         artifact_path: path to save artifacts. None if uploading to s3
     
     '''
@@ -31,9 +30,13 @@ class TrainInput(object):
             # get dataset
             self._artifact_path = user_input('Enter filepath for artifacts:') if \
                                     user_confirms('Run in local mode?') else None
-            self._dataset = user_selects('Choose dataset:', get_datasets())
+            spinner = Halo(text="Finding datasets on S3...", text_color="magenta")
+            spinner.start()
+            dataset_options = get_dataset_names()
+            spinner.succeed(text=spinner.text + 'Complete.')
+            self._dataset = get_dataset(user_selects('Choose dataset:', dataset_options))
         else:
-            self._dataset = kwargs.get('dataset')
+            self._dataset = get_dataset(kwargs.get('dataset'))
             self._artifact_path = kwargs.get('artifact_path')
     
     def local_mode(self):
@@ -44,7 +47,7 @@ class TrainInput(object):
         return self._dataset
         
     @dataset.setter
-    def dataset(self, new_dataset):
+    def dataset(self, new_dataset: Dataset):
         self._dataset = new_dataset
         
     @property
