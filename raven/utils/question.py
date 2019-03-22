@@ -5,6 +5,7 @@ Data Created:   03/18/2019
 Wrapper functions for prompting user input via questionary. Stolen from jigsaw.
 '''
 
+from halo import Halo
 from questionary import prompt, Validator, ValidationError
 
 def user_input(message, default="", validator=None):
@@ -90,3 +91,13 @@ def user_confirms(message, default=False):
     ]
     answer = prompt(question)
     return answer["value"]
+    
+def cli_spinner(text, func, *args):
+    '''wack shit
+    '''
+    spinner = Halo(text=text, text_color="magenta")
+    spinner.start()
+    result = func(*args)
+    spinner.succeed(text=spinner.text + 'Complete.')
+    return result
+    

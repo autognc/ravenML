@@ -6,7 +6,7 @@ Contains the classes for interfacing with training command group.
 '''
 
 from halo import Halo
-from raven.utils.question import user_input, user_selects, user_confirms
+from raven.utils.question import cli_spinner, user_input, user_selects, user_confirms
 from raven.utils.dataset import get_dataset_names, get_dataset
 from raven.data.interfaces import Dataset
 
@@ -27,14 +27,11 @@ class TrainInput(object):
     '''
     def __init__(self, inquire=True, **kwargs):
         if inquire:
-            # get dataset
             self._artifact_path = user_input('Enter filepath for artifacts:') if \
                                     user_confirms('Run in local mode?') else None
-            spinner = Halo(text="Finding datasets on S3...", text_color="magenta")
-            spinner.start()
-            dataset_options = get_dataset_names()
-            spinner.succeed(text=spinner.text + 'Complete.')
-            self._dataset = get_dataset(user_selects('Choose dataset:', dataset_options))
+            dataset_options = cli_spinner('Finding datasets on S3', get_dataset_names)
+            dataset = user_selects('Choose dataset:', dataset_options)
+            self._dataset = cli_spinner(f'Downloading {dataset} from S3...', get_dataset, dataset)
         else:
             self._dataset = get_dataset(kwargs.get('dataset'))
             self._artifact_path = kwargs.get('artifact_path')

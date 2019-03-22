@@ -6,7 +6,7 @@ Main CLI entry point for raven.
 '''
 
 import click
-import raven.utils.file_handler as file_handler
+import raven.utils.local_cache as local_cache
 from raven.train.commands import train
 from raven.data.commands import data
 
@@ -20,7 +20,7 @@ def cli():
 def clean():
     ''' Cleans locally saved raven cache files.
     '''
-    file_handler.clean() 
+    local_cache.clean() 
 
 cli.add_command(train)
 cli.add_command(data)
