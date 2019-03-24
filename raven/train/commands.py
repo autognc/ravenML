@@ -10,6 +10,7 @@ from pkg_resources import iter_entry_points
 from click_plugins import with_plugins
 from raven.train.interfaces import TrainInput, TrainOutput
 from raven.utils.dataset import get_dataset_names, get_dataset
+from raven.utils.question import cli_spinner
     
 ### OPTIONS ###
 def no_user_callback(ctx, param, value):
@@ -59,7 +60,9 @@ def train(ctx, local, dataset):
         # if no_user is true, make a TrainInput from the other flags
         if local == 'None': 
             local = None
-        ti = TrainInput(inquire=False, dataset=get_dataset(dataset), artifact_path=local)
+        ti = TrainInput(inquire=False, 
+                        dataset=cli_spinner('Retrieving dataset from s3...', get_dataset, dataset),
+                        artifact_path=local)
         # assign to context for use in plugin
         ctx.obj = ti
 

@@ -5,22 +5,38 @@ Date Created:   03/19/2019
 Classes necessary for interfacing with the data command group.
 '''
 
+import os
+import glob
 from pathlib import Path
+import raven.utils.local_cache as local_cache
+
+### CONSTANTS ###
+# these should be used in all possible situations to protect us
+# in case they change in the future
+STANDARD_DIR = 'standard'
+FOLD_DIR_PREFIX = 'fold_'
+TEST_DIR = 'test'
+
+# TODO add necessary functionality to this class as needed
 
 class Dataset(object):
     '''Represents a training dataset.
 
     Args:
-        path (Path): path to dataset relative to local cache
+        name (str): name of dataset 
+        metadata (dict): metadata of dataset
 
     Attributes:
-        dataset: name of the dataset to be used
-        artifact_path: path to save artifacts. None if uploading to s3
-
+        name (str): name of the dataset 
+        metadata (dict): metadata of dataset
     '''
     def __init__(self, name: str, metadata: dict):
         self._name = name
         self._metadata = metadata
+        
+    def get_num_folds(self):
+        path = local_cache.RAVEN_LOCAL_STORAGE_PATH / Path(self.name) / 'dev'
+        return len(glob.glob(str(path) + FOLD_DIR_PREFIX + '*'))
     
     @property
     def name(self):

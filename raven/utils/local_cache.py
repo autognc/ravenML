@@ -30,7 +30,7 @@ def ensure_exists():
     if not exists():
         _create()
 
-def subpath_exists(subpath):
+def subpath_exists(subpath: str):
     '''Checks if a subpath within the local storage_cache exists.
     '''
     return os.path.exists(RAVEN_LOCAL_STORAGE_PATH / Path(subpath))
@@ -42,13 +42,15 @@ def _make_subpath(subpath):
     '''
     os.makedirs(RAVEN_LOCAL_STORAGE_PATH / Path (subpath))
 
-def ensure_subpath_exists(subpath):
+def ensure_subpath_exists(subpath: str):
     '''Ensures the subpath exists in the local storage cache.
     '''
     if not subpath_exists(subpath):
         _make_subpath(subpath)
     
 def clean():
+    '''Cleans local storage cache.
+    '''
     try:
         shutil.rmtree(RAVEN_LOCAL_STORAGE_PATH)
     except FileNotFoundError:

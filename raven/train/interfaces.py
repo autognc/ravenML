@@ -21,9 +21,8 @@ class TrainInput(object):
             to populate TrainInput fields
 
     Attributes:
-        dataset: Dataset in use
-        artifact_path: path to save artifacts. None if uploading to s3
-    
+        dataset (Dataset): Dataset in use
+        artifact_path (Path): path to save artifacts. None if uploading to s3
     '''
     def __init__(self, inquire=True, **kwargs):
         if inquire:
@@ -33,7 +32,7 @@ class TrainInput(object):
             dataset = user_selects('Choose dataset:', dataset_options)
             self._dataset = cli_spinner(f'Downloading {dataset} from S3...', get_dataset, dataset)
         else:
-            self._dataset = get_dataset(kwargs.get('dataset'))
+            self._dataset = kwargs.get('dataset')
             self._artifact_path = kwargs.get('artifact_path')
     
     def local_mode(self):
