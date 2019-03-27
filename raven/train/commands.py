@@ -9,11 +9,8 @@ import click
 from pkg_resources import iter_entry_points
 from click_plugins import with_plugins
 from raven.train.interfaces import TrainInput, TrainOutput
-
-# placerholder: will eventually hit AWS to find available datasets
-def get_datasets():
-    return ['a', 'b', 'c']
-    
+from raven.utils.dataset import get_dataset_names, get_dataset
+from raven.utils.question import cli_spinner
     
 ### OPTIONS ###
 def no_user_callback(ctx, param, value):
@@ -32,13 +29,18 @@ no_user_opt = click.option(
 )
 
 # these commands must be eager so their values are available in the no_user_opt callback
+# dataset_opt = click.option(
+#     '-d', '--dataset', 'dataset', type=click.Choice(get_dataset_names()), is_eager=True,
+#     help='Dataset to use for training.'
+# )
+
 dataset_opt = click.option(
-    '-d', '--dataset', 'dataset', type=click.Choice(get_datasets()), is_eager=True,
+    '-d', '--dataset', 'dataset', type=str, is_eager=True,
     help='Dataset to use for training.'
 )
 
 local_opt = click.option(
-    '-l', '--local', 'local', type=str, is_eager=True,
+    '-l', '--local', 'local', type=str, is_eager=True, default='None',
     help='Keep all model artifacts local.'
 )
 
@@ -52,13 +54,15 @@ local_opt = click.option(
 @local_opt
 def train(ctx, local, dataset):
     '''
-    Train command group. Everything flows from this.
+    Training commands.
     '''
     if ctx.obj['NO_USER']:
         # if no_user is true, make a TrainInput from the other flags
-        ti = TrainInput(inquire=False)
-        ti.artifact_path = local
-        ti.dataset = dataset 
+        if local == 'None': 
+            local = None
+        ti = TrainInput(inquire=False, 
+                        dataset=cli_spinner('Retrieving dataset from s3...', get_dataset, dataset),
+                        artifact_path=local)
         # assign to context for use in plugin
         ctx.obj = ti
 
@@ -70,10 +74,10 @@ def process_result(ctx, result: TrainOutput, local, dataset):
         click.echo('Upload model artifacts here.')
     return result
 
-@train.command(help='List available training plugins.')
+@train.command()
 def list():
     '''
-    Lists mounted training plugins by name.
+    List available training plugins by name.
     '''
     for entry in iter_entry_points(group='raven.plugins.train', name=None):
-        print(entry.name)
+        click.echo(entry.name)
