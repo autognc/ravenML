@@ -93,7 +93,7 @@ def _ensure_dataset(name: str):
     local_cache.ensure_exists()
     local_cache.ensure_subpath_exists(_to_dataset_dir(name))
     for obj in DATASET_BUCKET.objects.filter(Prefix = name):
-        local_key = _to_dataset_dir(name)
+        local_key = _to_dataset_dir(obj.key)
         if not local_cache.subpath_exists(local_key):
             subpath = os.path.dirname(local_key)
             local_cache.ensure_subpath_exists(subpath)
