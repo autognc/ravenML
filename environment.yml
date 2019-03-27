@@ -1,6 +1,6 @@
 name: raven
 channels:
-  - defaults
+    - defaults
 dependencies:
   - python=3.6.8
   - pip:
@@ -10,4 +10,3 @@ dependencies:
     - tqdm==4.31.1
     - pytest==4.3.0
     - boto3==1.8.7
-

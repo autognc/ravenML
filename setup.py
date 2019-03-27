@@ -7,7 +7,11 @@ setup(
     packages=['raven'],
     install_requires=[
         'Click',
-        'click-plugins'
+        'click-plugins',
+        'PyInquirer',
+        'pytest',
+        'boto3',
+        'tqdm'
     ],
     entry_points='''
       [console_scripts]
