@@ -12,10 +12,10 @@ def tf_od(ctx, kfold):
 @pass_train
 @click.pass_context
 def train(ctx, train: TrainInput):
-    # If the context has a TrainInput already, it is passed as "train"
+    # If the context (ctx) has a TrainInput already, it is passed as "train"
     # If it does not, the constructor is called AUTOMATICALLY
     # by Click because the @pass_train decorator is set to ensure
-    # object creation
+    # object creation, after which the created object is passed as "train"
     # after training, create an instance of TrainOutput and return it
     result = TrainOutput()
     return result

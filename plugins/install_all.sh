@@ -1,8 +1,11 @@
+#!/usr/bin/env bash
+
 ##
 # Author(s):        Carson Schubert (carson.schubert14@gmail.com)
 # Date Created:     02/25/2019
 #
 # Install/uninstall script for raven plugins.
+# NOTE: This script MUST be run from the plugins directory.
 ##
 
 
@@ -26,28 +29,34 @@ set -o nounset      # Treat unset variables and parameters other than the specia
 # fi;
 
 # determine if we are installing or uninstalling
-install=1
-while getopts "u" opt; do
+install_flag=d
+gpu_flag=d
+requirements_prefix="requirements"
+while getopts "ug" opt; do
     case "$opt" in
         u)
-            install=0
+            install_flag=u
             ;;
+        g)
+            gpu_flag=g
+            requirements_prefix="requirements-gpu"
      esac
 done
 
-if [ $install -eq 1 ]; then
-    for d in */ ; do
-        echo "Installing plugin $d..."
-        cd $d
-        pip install -e .
-        cd -
-    done
-else
-    for f in *; do
-        if [ -d ${f} ]; then
-            echo "Uninstalling plugin $f..."
-            pip uninstall $f -y
+for f in * ; do
+    if [ -d ${f} ]; then
+        echo "Going on plugin $f..."
+        cd $f
+        ./install.sh -$install_flag -$gpu_flag
+        if [ "$install_flag" = "u" ]; then
+            echo "Cleaning up plugin dependencies..."
+            pip uninstall -r $requirements_prefix.txt -y
         fi
-    done
-fi
-##
+        cd - > /dev/null
+    fi
+done
+
+# ensure raven core environment dependencies are still met
+echo "Checking raven core dependencies..."
+cd ..
+conda env update -f environment.yml
