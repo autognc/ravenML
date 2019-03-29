@@ -1,9 +1,9 @@
-'''
+"""
 Author(s):      Gavin Martin, Carson Schubert (carson.schubert14@gmail.com)
 Data Created:   03/18/2019
 
 Wrapper functions for prompting user input via questionary. Stolen from jigsaw.
-'''
+"""
 
 from halo import Halo
 from questionary import prompt, Validator, ValidationError
@@ -93,8 +93,8 @@ def user_confirms(message, default=False):
     return answer["value"]
     
 def cli_spinner(text, func, *args):
-    '''wack shit
-    '''
+    """ Halo spinner wrapper
+    """
     spinner = Halo(text=text, text_color="magenta")
     spinner.start()
     result = func(*args)

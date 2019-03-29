@@ -1,9 +1,9 @@
-'''
+"""
 Author(s):      Carson Schubert (carson.schubert14@gmail.com)  
 Date Created:   03/10/2019
 
 Command group for dataset exploration in raven.
-'''
+"""
 
 import pydoc
 import click
@@ -26,8 +26,8 @@ detailed_opt = click.option(
 @click.group()
 @click.pass_context
 def data(ctx):
-    ''' Dataset exploration commands.
-    '''
+    """Dataset exploration commands.
+    """
     pass
 
 @data.resultcallback()
@@ -38,11 +38,11 @@ def process_result(ctx, result):
 @data.command()
 @detailed_opt
 def list(detailed: bool):
-    ''' List available datasets.
+    """List available datasets.
     
     Args:
         detailed: T/F show detailed view
-    '''
+    """
     spinner = Halo(text="Finding datasets on S3...", text_color="magenta")
     spinner.start()
     dataset_names = get_dataset_names()
@@ -61,11 +61,11 @@ def list(detailed: bool):
 @data.command()
 @click.argument('dataset_name')
 def inspect(dataset_name: str):
-    ''' See detailed information about a dataset.
+    """See detailed information about a dataset.
 
     Args:
         dataset_name: string name of the dataset to inspect
-    '''
+    """
     spinner = Halo(text="Downloading dataset metadata from S3...", text_color="magenta")
     spinner.start()
     metadata = get_dataset_metadata(dataset_name)
@@ -75,7 +75,7 @@ def inspect(dataset_name: str):
 
 ### HELPERS ###
 def _stringify_metadata(metadata, colored=False):
-    ''' Turn metadata into a nicely formatted string for displaying.
+    """Turn metadata into a nicely formatted string for displaying.
 
     Args:
         metadata: dictionary of metadata
@@ -83,7 +83,7 @@ def _stringify_metadata(metadata, colored=False):
 
     Returns:
         str: formatted metadata string
-    '''
+    """
     result = ''
     for key, val in metadata.items():
         if key not in EXCLUDED_METADATA:
@@ -94,14 +94,14 @@ def _stringify_metadata(metadata, colored=False):
     return result
 
 def _get_detailed_dataset_info(datasets):
-    ''' Stringifies and concatenates metadata for a list of datasets.
+    """Stringifies and concatenates metadata for a list of datasets.
 
     Args:
         datasets: list of dataset names
 
     Returns:
         str: concatenated and delimited metadata string for each dataset.
-    '''
+    """
     result = ''
     for dataset in datasets:
         metadata = get_dataset_metadata(dataset)

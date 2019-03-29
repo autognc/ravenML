@@ -8,7 +8,7 @@ setup(
     install_requires=[
         'Click',
         'click-plugins',
-        'PyInquirer',
+        'questionary',
         'pytest',
         'boto3',
         'tqdm'
