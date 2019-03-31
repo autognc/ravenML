@@ -1,59 +1,39 @@
-'''
+"""
 Author(s):      Carson Schubert (carson.schubert14@gmail.com)
 Date Created:   03/03/2019
 
-Contains the classes for interfacing with training plugins.
-'''
+Contains the classes for interfacing with training command group.
+"""
 
-from PyInquirer import prompt
-
-# placeholder: this will be replaced with calls to AWS to retrieve datasets
-def get_datasets():
-    return ['a', 'b', 'c']
+from halo import Halo
+from raven.utils.question import cli_spinner, user_input, user_selects, user_confirms
+from raven.utils.dataset import get_dataset_names, get_dataset
+from raven.data.interfaces import Dataset
 
 class TrainInput(object):
-    '''Represents a training input. Contains all plugin-independent information
+    """Represents a training input. Contains all plugin-independent information
     necessary for training. Plugins can define their own behavior for getting
     additional information.
 
     Args:
         inquire: ask user for inputs or not
+        **kwargs: should be provided if inquire is set to False
+            to populate TrainInput fields
 
     Attributes:
-        dataset: name of the dataset to be used
-        local: run in local mode or not
-    
-    '''
-    def __init__(self, inquire=True):
+        dataset (Dataset): Dataset in use
+        artifact_path (Path): path to save artifacts. None if uploading to s3
+    """
+    def __init__(self, inquire=True, **kwargs):
         if inquire:
-            questions = [
-                {
-                    'type': 'confirm',
-                    'message': 'Run in local mode?',
-                    'name': 'local',
-                    'default': False,
-                },
-                {
-                    'type': 'input',
-                    'name': 'artifact_path',
-                    'message': 'Enter filepath for artifacts:',
-                    'when': lambda answers: answers['local']
-                }
-            ]
-            # add dataset choices
-            questions.append({
-                    'type': 'list',
-                    'name': 'dataset',
-                    'message': 'Choose dataset',
-                    'choices': get_datasets()
-            })
-            answers = prompt(questions)
-            self._dataset = answers['dataset']
-            # path will be None when not in local mode
-            self._artifact_path = answers['artifact_path'] if answers['local'] else None
+            self._artifact_path = user_input('Enter filepath for artifacts:') if \
+                                    user_confirms('Run in local mode?') else None
+            dataset_options = cli_spinner('Finding datasets on S3', get_dataset_names)
+            dataset = user_selects('Choose dataset:', dataset_options)
+            self._dataset = cli_spinner(f'Downloading {dataset} from S3...', get_dataset, dataset)
         else:
-            self._dataset = 'test'
-            self._artifact_path = None
+            self._dataset = kwargs.get('dataset')
+            self._artifact_path = kwargs.get('artifact_path')
     
     def local_mode(self):
         return self.artifact_path is not None
@@ -63,7 +43,7 @@ class TrainInput(object):
         return self._dataset
         
     @dataset.setter
-    def dataset(self, new_dataset):
+    def dataset(self, new_dataset: Dataset):
         self._dataset = new_dataset
         
     @property
@@ -75,13 +55,13 @@ class TrainInput(object):
         self._artifact_path = new_path
 
 class TrainOutput(object):
-    '''Training Output class
+    """Training Output class
 
     Args:
 
     Attributes:
     
-    '''
+    """
     def __init__(self):
         pass
         

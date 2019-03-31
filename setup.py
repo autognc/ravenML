@@ -7,7 +7,12 @@ setup(
     packages=['raven'],
     install_requires=[
         'Click',
-        'click-plugins'
+        'click-plugins',
+        'questionary',
+        'pytest',
+        'boto3',
+        'tqdm',
+        'halo'
     ],
     entry_points='''
       [console_scripts]
