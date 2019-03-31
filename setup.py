@@ -12,7 +12,6 @@ setup(
         'pytest',
         'boto3',
         'tqdm',
-        'halo'
     ],
     entry_points='''
       [console_scripts]

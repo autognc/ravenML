@@ -3,7 +3,7 @@ from setuptools import setup
 setup(
     name='raven_tf_semantic',
     version='0.1',
-    description='Training plugin for raven'
+    description='Training plugin for raven',
     packages=['raven_tf_semantic'],
     install_requires=[
         'Click',
