@@ -1,9 +1,9 @@
-'''
+"""
 Author(s):      Carson Schubert (carson.schubert14@gmail.com)
 Date Created:   03/03/2019
 
 Contains the classes for interfacing with training command group.
-'''
+"""
 
 from halo import Halo
 from raven.utils.question import cli_spinner, user_input, user_selects, user_confirms
@@ -11,7 +11,7 @@ from raven.utils.dataset import get_dataset_names, get_dataset
 from raven.data.interfaces import Dataset
 
 class TrainInput(object):
-    '''Represents a training input. Contains all plugin-independent information
+    """Represents a training input. Contains all plugin-independent information
     necessary for training. Plugins can define their own behavior for getting
     additional information.
 
@@ -23,7 +23,7 @@ class TrainInput(object):
     Attributes:
         dataset (Dataset): Dataset in use
         artifact_path (Path): path to save artifacts. None if uploading to s3
-    '''
+    """
     def __init__(self, inquire=True, **kwargs):
         if inquire:
             self._artifact_path = user_input('Enter filepath for artifacts:') if \
@@ -55,13 +55,13 @@ class TrainInput(object):
         self._artifact_path = new_path
 
 class TrainOutput(object):
-    '''Training Output class
+    """Training Output class
 
     Args:
 
     Attributes:
     
-    '''
+    """
     def __init__(self):
         pass
         

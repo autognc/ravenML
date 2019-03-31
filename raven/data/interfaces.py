@@ -1,9 +1,9 @@
-'''
+"""
 Author(s):      Carson Schubert (carson.schubert14@gmail.com)
 Date Created:   03/19/2019
 
 Classes necessary for interfacing with the data command group.
-'''
+"""
 
 import os
 import glob
@@ -20,7 +20,7 @@ TEST_DIR = 'test'
 # TODO add necessary functionality to this class as needed
 
 class Dataset(object):
-    '''Represents a training dataset.
+    """Represents a training dataset.
 
     Args:
         name (str): name of dataset 
@@ -29,7 +29,7 @@ class Dataset(object):
     Attributes:
         name (str): name of the dataset 
         metadata (dict): metadata of dataset
-    '''
+    """
     def __init__(self, name: str, metadata: dict):
         self._name = name
         self._metadata = metadata

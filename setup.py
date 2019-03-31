@@ -8,10 +8,11 @@ setup(
     install_requires=[
         'Click',
         'click-plugins',
-        'PyInquirer',
+        'questionary',
         'pytest',
         'boto3',
-        'tqdm'
+        'tqdm',
+        'halo'
     ],
     entry_points='''
       [console_scripts]

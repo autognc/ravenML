@@ -1,9 +1,9 @@
-'''
+"""
 Author(s):      Carson Schubert (carson.schubert14@gmail.com)  
 Date Created:   02/23/2019
 
 Command group for training in raven.
-'''
+"""
 
 import click
 from pkg_resources import iter_entry_points
@@ -53,9 +53,9 @@ local_opt = click.option(
 @dataset_opt
 @local_opt
 def train(ctx, local, dataset):
-    '''
+    """
     Training commands.
-    '''
+    """
     if ctx.obj['NO_USER']:
         # if no_user is true, make a TrainInput from the other flags
         if local == 'None': 
@@ -76,8 +76,8 @@ def process_result(ctx, result: TrainOutput, local, dataset):
 
 @train.command()
 def list():
-    '''
+    """
     List available training plugins by name.
-    '''
+    """
     for entry in iter_entry_points(group='raven.plugins.train', name=None):
         click.echo(entry.name)
