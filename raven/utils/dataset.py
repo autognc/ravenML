@@ -16,7 +16,7 @@ S3 = boto3.resource('s3')
 DATASET_BUCKET = S3.Bucket('skr-datasets-test')
 
 # path within local cache for datasets
-DATASET_PATH = local_cache.RAVEN_LOCAL_STORAGE_PATH / Path('datasets')
+DATASETS_PATH = local_cache.RAVEN_LOCAL_STORAGE_PATH / Path('datasets')
 
 ### PUBLIC METHODS ###
 def get_dataset_names():
@@ -43,7 +43,7 @@ def get_dataset_metadata(name: str, no_check=False):
     """
     if not no_check:
         _ensure_metadata(name)
-    return json.load(open(DATASET_PATH / Path(name) / 'metadata.json'))
+    return json.load(open(DATASETS_PATH / Path(name) / 'metadata.json'))
 
 def get_dataset(name: str):
     """Retrives a dataset. Downloads from S3 if necessary.
@@ -77,7 +77,7 @@ def _ensure_metadata(name: str):
     Args:
         name (str): name of dataset
     """
-    metadata_path = DATASET_PATH / Path(name) / 'metadata.json'
+    metadata_path = DATASETS_PATH / Path(name) / 'metadata.json'
     if not local_cache.subpath_exists(metadata_path):
         local_cache.ensure_exists()
         local_cache.ensure_subpath_exists(_to_dataset_dir(name))
@@ -90,13 +90,19 @@ def _ensure_dataset(name: str):
     Args:
         name (str): name of dataset
     """
+    # ensure local cache and named dataset directory exist
     local_cache.ensure_exists()
     local_cache.ensure_subpath_exists(_to_dataset_dir(name))
+    # loop through all objects in the bucket
     for obj in DATASET_BUCKET.objects.filter(Prefix = name):
+        # add `datasets/` prefix to object key
         local_key = _to_dataset_dir(obj.key)
         if not local_cache.subpath_exists(local_key):
+            # get subpath of object
             subpath = os.path.dirname(local_key)
+            # ensure destination of object exists
             local_cache.ensure_subpath_exists(subpath)
-            storage_path = DATASET_PATH / Path(obj.key)
+            # create final absolute storage path
+            storage_path = DATASETS_PATH / Path(obj.key)
+            # actually download file to destination
             DATASET_BUCKET.download_file(obj.key, str(storage_path))
-
