@@ -90,9 +90,8 @@ def _ensure_dataset(name: str):
     Args:
         name (str): name of dataset
     """
-    # ensure local cache and named dataset directory exist
+    # ensure local cache exists
     local_cache.ensure_exists()
-    local_cache.ensure_subpath_exists(_to_dataset_dir(name))
     # loop through all objects in the bucket
     for obj in DATASET_BUCKET.objects.filter(Prefix = name):
         # add `datasets/` prefix to object key
