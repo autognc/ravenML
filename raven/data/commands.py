@@ -10,6 +10,7 @@ import click
 from colorama import init, Fore
 from halo import Halo
 from raven.utils.dataset import get_dataset_names, get_dataset_metadata
+from raven.utils.question import cli_spinner
 
 init()
 
@@ -43,20 +44,15 @@ def list(detailed: bool):
     Args:
         detailed: T/F show detailed view
     """
-    spinner = Halo(text="Finding datasets on S3...", text_color="magenta")
-    spinner.start()
-    dataset_names = get_dataset_names()
-    spinner.succeed(text=spinner.text + "Complete.")
+    dataset_names = cli_spinner("Finding datasets on S3...", get_dataset_names)
 
-    if not detailed:
-        for name in dataset_names:
-            click.echo(name)
+    if detailed:
+        detailed_info = cli_spinner("Downloading dataset metadata from S3...", _get_detailed_dataset_info, dataset_names)
+        pydoc.pager(detailed_info)      
         return
-    spinner = Halo(text="Downloading dataset metadata from S3...", text_color="magenta")
-    spinner.start()
-    detailed_info = _get_detailed_dataset_info(dataset_names)
-    spinner.succeed(text=spinner.text + "Complete.")
-    pydoc.pager(detailed_info)      
+        
+    for name in dataset_names:
+        click.echo(name)
 
 @data.command()
 @click.argument('dataset_name')
@@ -66,10 +62,7 @@ def inspect(dataset_name: str):
     Args:
         dataset_name: string name of the dataset to inspect
     """
-    spinner = Halo(text="Downloading dataset metadata from S3...", text_color="magenta")
-    spinner.start()
-    metadata = get_dataset_metadata(dataset_name)
-    spinner.succeed(text=spinner.text + 'Complete.')
+    metadata = cli_spinner("Downloading dataset metadata from S3...", get_dataset_metadata, dataset_name)
     click.echo(_stringify_metadata(metadata, colored=True))
 
 
