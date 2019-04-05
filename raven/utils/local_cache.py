@@ -10,6 +10,7 @@ import shutil
 import click
 from pathlib import Path
 
+# local cache root path for raven application
 RAVEN_LOCAL_STORAGE_PATH = Path(os.path.expanduser('~/.raven-ml'))
 
 class LocalCache(object):
