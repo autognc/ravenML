@@ -11,13 +11,12 @@ from pathlib import Path
 import boto3
 from raven.utils.local_cache import LocalCache, global_cache
 from raven.data.interfaces import Dataset
+from raven.utils.config import get_config
 
 S3 = boto3.resource('s3')
-DATASET_BUCKET = S3.Bucket('skr-datasets-test')
 
 # LocalCache within local cache for datasets
 dataset_cache = LocalCache(path=global_cache.path / Path('datasets'))
-
 
 ### PUBLIC METHODS ###
 def get_dataset_names():
@@ -26,7 +25,8 @@ def get_dataset_names():
     Returns:
         list: dataset names
     """
-    bucket_contents = S3.meta.client.list_objects(Bucket='skr-datasets-test', Delimiter='/')
+    config = get_config()
+    bucket_contents = S3.meta.client.list_objects(Bucket=config['dataset_bucket_name'], Delimiter='/')
     dataset_names = []
     for obj in bucket_contents.get('CommonPrefixes'):
         dataset_names.append(obj.get('Prefix')[:-1])
@@ -78,6 +78,8 @@ def _ensure_metadata(name: str):
     Args:
         name (str): name of dataset
     """
+    config = get_config()
+    DATASET_BUCKET = S3.Bucket(config['dataset_bucket_name'])
     metadata_path = Path(name) / 'metadata.json'
     if not dataset_cache.subpath_exists(metadata_path):
         dataset_cache.ensure_subpath_exists(name)
@@ -91,6 +93,8 @@ def _ensure_dataset(name: str):
     Args:
         name (str): name of dataset
     """
+    config = get_config()
+    DATASET_BUCKET = S3.Bucket(config['dataset_bucket_name'])
     for obj in DATASET_BUCKET.objects.filter(Prefix = name):
         if not dataset_cache.subpath_exists(obj.key):
             subpath = os.path.dirname(obj.key)

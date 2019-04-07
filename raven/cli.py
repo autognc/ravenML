@@ -9,6 +9,7 @@ import click
 from raven.utils.local_cache import global_cache
 from raven.train.commands import train
 from raven.data.commands import data
+from raven.config.commands import config
 
 @click.group()
 def cli():
@@ -24,3 +25,4 @@ def clean():
 
 cli.add_command(train)
 cli.add_command(data)
+cli.add_command(config)
