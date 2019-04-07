@@ -1,6 +1,6 @@
 import click
-from raven.train.options import kfold_opt, pass_train
-from raven.train.interfaces import TrainInput, TrainOutput
+from ravenml.train.options import kfold_opt, pass_train
+from ravenml.train.interfaces import TrainInput, TrainOutput
 
 @click.group(help='TensorFlow Semantic Segmentation.')
 @click.pass_context

@@ -7,6 +7,33 @@ Wrapper functions for prompting user input via questionary. Stolen from jigsaw.
 
 from halo import Halo
 from questionary import prompt, Validator, ValidationError
+import sys
+
+
+def in_test_mode():
+    if "pytest" in sys.modules:
+        return True
+    return False
+
+class Spinner:
+    """Wrapper class to prevent bugs with Halo in pytest (see Issue #97)
+    """
+
+    def __init__(self, text, text_color):
+        self.text = text
+        if in_test_mode():
+            return
+        self._spinner = Halo(text=text, text_color=text_color)
+
+    def start(self):
+        if in_test_mode():
+            return
+        self._spinner.start()
+
+    def succeed(self, text):
+        if in_test_mode():
+            return
+        self._spinner.succeed(text=text)
 
 def user_input(message, default="", validator=None):
     """Prompts the user for input
@@ -95,7 +122,8 @@ def user_confirms(message, default=False):
 def cli_spinner(text, func, *args):
     """ Halo spinner wrapper
     """
-    spinner = Halo(text=text, text_color="magenta")
+    # spinner = Halo(text=text, text_color="magenta")
+    spinner = Spinner(text=text, text_color="magenta")
     spinner.start()
     result = func(*args)
     spinner.succeed(text=spinner.text + 'Complete.')
