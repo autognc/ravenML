@@ -10,7 +10,7 @@ jobs:
   include:
     - stage: Testing
       name: "Testing Configuration Commands"
-      script: pytest raven/tests/config_command_test.py
+      script: pytest
     
     - stages: 
       name: "Deploying to Development"
