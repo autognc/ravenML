@@ -2,7 +2,7 @@
 Author(s):      Carson Schubert (carson.schubert14@gmail.com)
 Date Created:   04/06/19
 
-Tests the raven data command group.
+Tests the ravenml data command group.
 """
 
 import pytest
@@ -12,10 +12,10 @@ from pathlib import Path
 from moto import mock_s3
 from shutil import copyfile
 from click.testing import CliRunner
-from raven.data.commands import list, inspect
-from raven.utils.config import get_config
-from raven.utils.local_cache import global_cache
-from raven.utils.dataset import dataset_cache
+from ravenml.data.commands import list, inspect
+from ravenml.utils.config import get_config
+from ravenml.utils.local_cache import global_cache
+from ravenml.utils.dataset import dataset_cache
 
 ### SETUP ###
 mock = mock_s3()
@@ -28,7 +28,7 @@ def setup_module():
     """
     mock.start()
     
-    # alter global and dataset cache objects used throughout raven for local caching
+    # alter global and dataset cache objects used throughout ravenml for local caching
     global_cache.path = test_dir / Path('.testing')
     global_cache.ensure_exists()
     dataset_cache.path = global_cache.path / Path('datasets')
@@ -38,13 +38,12 @@ def setup_module():
 
     config = get_config()
     
-    S3 = boto3.resource('s3')
+    S3 = boto3.resource('s3', region_name='us-east-1')
     # We need to create the bucket since this is all in Moto's 'virtual' AWS account
     S3.create_bucket(Bucket=config['dataset_bucket_name'])
     bucket = S3.Bucket(config['dataset_bucket_name'])
     bucket.put_object(Key='test_dataset_1/metadata.json', Body=open(test_data_dir / Path('test_metadata_1.json'), 'rb'))
     bucket.put_object(Key='test_dataset_2/metadata.json', Body=open(test_data_dir / Path('test_metadata_2.json'), 'rb'))
-    
 
 def teardown_module():
     """ Tears down the module after testing.

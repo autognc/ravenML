@@ -1,21 +1,25 @@
 from setuptools import setup
 
 setup(
-    name='raven',
+    name='ravenML',
     version='0.0.1',
     description='Training CLI Tool',
-    packages=['raven'],
+    packages=['ravenml'],
     install_requires=[
         'Click',
         'click-plugins',
         'questionary',
-        'pytest',
-        'boto3',
+        'boto3>=1.9.86', 
         'tqdm',
+        'pip-tools'
+    ],
+    tests_require=[
+        'pytest',
+        'moto'
     ],
     entry_points='''
       [console_scripts]
-      raven=raven.cli:cli
+      ravenml=ravenml.cli:cli
     ''',
 )
       

@@ -2,7 +2,7 @@
 Author(s):      Carson Schubert (carson.schubert14@gmail.com)
 Date Created:   03/18/2019
 
-Handles local file caching for raven.
+Handles local file caching for ravenml.
 """
 
 import os
@@ -10,8 +10,8 @@ import shutil
 import click
 from pathlib import Path
 
-# local cache root path for raven application
-RAVEN_LOCAL_STORAGE_PATH = Path(os.path.expanduser('~/.raven-ml'))
+# local cache root path for ravenml application
+RAVENML_LOCAL_STORAGE_PATH = Path(os.path.expanduser('~/.ravenML'))
 
 class LocalCache(object):
     """Represents a local storage cache. Provides functions for
@@ -24,7 +24,7 @@ class LocalCache(object):
         path (Path): Absolute path in filesystem to root of the local cache.
     """
 
-    def __init__(self, path=RAVEN_LOCAL_STORAGE_PATH):
+    def __init__(self, path=RAVENML_LOCAL_STORAGE_PATH):
         self._path = path
         self.ensure_exists()
 
@@ -79,7 +79,7 @@ class LocalCache(object):
         self._path = path
 
     def _create(self):
-        """Makes the local storage cache for raven.
+        """Makes the local storage cache for ravenml.
         
         Not for external use (use ensure_exists() instead)
         """
@@ -97,7 +97,7 @@ class LocalCache(object):
 # Example use for datasets:
 #
 # from pathlib import Path
-# from raven.utils.local_cache import LocalCache, global_cache
+# from ravenml.utils.local_cache import LocalCache, global_cache
 #
 # dataset_cache = LocalCache(path=global_path.path / Path('datasets'))
 #
