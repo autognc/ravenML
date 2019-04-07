@@ -2,11 +2,11 @@
 Author(s):      Carson Schubert (carson.schubert14@gmail.com)  
 Date Created:   02/25/2019
 
-Standard options which should be used by raven training plugins.
+Standard options which should be used by ravenml training plugins.
 """
 
 import click
-from raven.train.interfaces import TrainInput
+from ravenml.train.interfaces import TrainInput
 
 ### HELPERS ###
 

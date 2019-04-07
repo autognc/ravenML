@@ -2,7 +2,7 @@
 Author(s):      Carson Schubert (carson.schubert14@gmail.com)
 Date Created:   04/06/19
 
-Tests the raven config command group.
+Tests the ravenml config command group.
 """
 
 import pytest
@@ -11,9 +11,9 @@ import re
 from pathlib import Path
 from shutil import copyfile
 from click.testing import CliRunner
-from raven.config.commands import show, update
-from raven.utils.local_cache import global_cache
-from raven.utils.dataset import dataset_cache
+from ravenml.config.commands import show, update
+from ravenml.utils.local_cache import global_cache
+from ravenml.utils.dataset import dataset_cache
 
 ### SETUP ###
 runner = CliRunner()
@@ -24,7 +24,7 @@ ansi_escape = re.compile(r'(\x9B|\x1B\[)[0-?]*[ -/]*[@-~]')
 def setup_module():
     """ Sets up the module for testing.
     """
-    # alter global and dataset cache objects used throughout raven for local caching
+    # alter global and dataset cache objects used throughout ravenml for local caching
     global_cache.path = test_dir / Path('.testing')
     global_cache.ensure_exists()
     dataset_cache.path = global_cache.path / Path('datasets')

@@ -4,7 +4,7 @@
 # Author(s):        Carson Schubert (carson.schubert14@gmail.com)
 # Date Created:     03/07/2019
 #
-# Install/uninstall script for raven TensorFlow Semantic Segmentation plugin.
+# Install/uninstall script for raven TensorFlow Object Detection plugin.
 ##
 
 
@@ -38,5 +38,5 @@ else
     # NOTE: this does NOT clean up after the plugin (i.e, leaves plugin dependenices installed)
     # To clean up, use the install_all.sh script at the root of the plugins/ directory
     echo "Uninstalling..."
-    pip uninstall raven-tf-semantic -y
+    pip uninstall ravenml-tf-od -y
 fi

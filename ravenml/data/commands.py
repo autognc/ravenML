@@ -2,15 +2,15 @@
 Author(s):      Carson Schubert (carson.schubert14@gmail.com)  
 Date Created:   03/10/2019
 
-Command group for dataset exploration in raven.
+Command group for dataset exploration in ravenml.
 """
 
 import pydoc
 import click
 from colorama import init, Fore
 from halo import Halo
-from raven.utils.dataset import get_dataset_names, get_dataset_metadata
-from raven.utils.question import cli_spinner
+from ravenml.utils.dataset import get_dataset_names, get_dataset_metadata
+from ravenml.utils.question import cli_spinner
 
 init()
 
