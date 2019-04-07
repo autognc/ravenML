@@ -9,10 +9,9 @@ import os
 import json
 from pathlib import Path
 import boto3
-from raven.utils.local_cache import LocalCache, global_cache
-from raven.data.interfaces import Dataset
-from raven.utils.config import get_config
-
+from ravenml.utils.local_cache import LocalCache, global_cache
+from ravenml.data.interfaces import Dataset
+from ravenml.utils.config import get_config
 
 # LocalCache within local cache for datasets
 dataset_cache = LocalCache(path=global_cache.path / Path('datasets'))

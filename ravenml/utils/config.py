@@ -2,13 +2,13 @@
 Author(s):      Carson Schubert (carson.schubert14@gmail.com)
 Date Created:   04/05/2019
 
-Utility module for managing raven's configuration.
+Utility module for managing ravenml's configuration.
 """
 
 import yaml
 from copy import deepcopy
 from pathlib import Path
-from raven.utils.local_cache import global_cache
+from ravenml.utils.local_cache import global_cache
 
 # required configuration fields
 CONFIG_FIELDS = sorted(['dataset_bucket_name', 'artifact_bucket_name'])

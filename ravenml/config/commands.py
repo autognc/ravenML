@@ -2,17 +2,17 @@
 Author(s):      Carson Schubert (carson.schubert14@gmail.com)  
 Date Created:   04/05/2019
 
-Command group for setting raven configuration.
+Command group for setting ravenml configuration.
 """
 
 import click
 import yaml
 from pathlib import Path
 from colorama import init, Fore
-from raven.utils.question import user_input, user_confirms
-from raven.utils.config import CONFIG_FIELDS
-from raven.utils.local_cache import global_cache
-from raven.utils.config import get_config, update_config
+from ravenml.utils.question import user_input, user_confirms
+from ravenml.utils.config import CONFIG_FIELDS
+from ravenml.utils.local_cache import global_cache
+from ravenml.utils.config import get_config, update_config
 
 init()
     
