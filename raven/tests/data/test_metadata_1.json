@@ -1,0 +1,20 @@
+{
+  "name": "test_dataset_1",
+  "date_created": "2019-03-18T22:38:59.794095Z",
+  "created_by": "Carson Schubert",
+  "comments": "initial test",
+  "training_type": "Bounding Box",
+  "image_ids": [
+    "pic_204",
+    "pic_701",
+    "pic_268",
+    "pic_594",
+    "pic_634",
+    "pic_674",
+    "pic_310",
+    "pic_236",
+    "pic_270"
+  ],
+  "filters": { "groups": [] },
+  "transforms": []
+}
