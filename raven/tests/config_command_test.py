@@ -1,3 +1,10 @@
+"""
+Author(s):      Carson Schubert (carson.schubert14@gmail.com)
+Date Created:   04/06/19
+
+Tests the raven config command group.
+"""
+
 import pytest
 import os
 import re
@@ -15,7 +22,8 @@ test_data_dir = test_dir / Path('data')
 ansi_escape = re.compile(r'(\x9B|\x1B\[)[0-?]*[ -/]*[@-~]')
 
 def setup_module():
-    """ setup any state specific to the execution of the given module."""
+    """ Sets up the module for testing.
+    """
     # alter global and dataset cache objects used throughout raven for local caching
     global_cache.path = test_dir / Path('.testing')
     global_cache.ensure_exists()
@@ -25,14 +33,15 @@ def setup_module():
     copyfile(test_data_dir / Path('config.yml'), global_cache.path / Path('config.yml'))
 
 def teardown_module():
-    """ teardown any state that was previously setup with a setup_module
-    method.
+    """ Tears down the module after testing.
     """
     global_cache.clean()
     
 
 ### TESTS ###
 def test_show():
+    """ Tests the show subcommand.
+    """
     result = runner.invoke(show)
     assert result.exit_code == 0
     with open(test_data_dir / Path('config_output.txt'), 'r') as myfile:

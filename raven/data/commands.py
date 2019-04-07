@@ -28,6 +28,9 @@ detailed_opt = click.option(
 @click.pass_context
 def data(ctx):
     """Dataset exploration commands.
+    
+    Args:
+        ctx (Context): click context object
     """
     pass
 

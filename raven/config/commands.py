@@ -23,8 +23,10 @@ init()
 @click.group()
 @click.pass_context
 def config(ctx):
-    """
-    Configuration commands.
+    """Configuration commands.
+
+    Args:
+        ctx (Context): click context object
     """
     ctx.obj = False     # flag to indicate if entering update from show
 
@@ -32,6 +34,9 @@ def config(ctx):
 @click.pass_context
 def show(ctx):
     """Show current config.
+    
+    Args:
+        ctx (Context): click context object
     """
     try:
         # try and load the configuration
@@ -55,6 +60,9 @@ def show(ctx):
 @click.pass_context
 def update(ctx):
     """Update current config.
+    
+    Args:
+        ctx (Context): click context object
     """
     config = {}
     try: 
