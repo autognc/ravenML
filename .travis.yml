@@ -1,0 +1,27 @@
+language: python
+python:
+  - "3.6"
+  - "3.6-dev"
+
+before_install:
+  - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
+  - chmod +x miniconda.sh
+  - ./miniconda.sh -b -p $HOME/miniconda
+  - export PATH="$HOME/miniconda/bin:$PATH"
+
+
+install:
+  - conda env create -f environment.yml
+  - conda activate raven
+
+jobs:
+  include:
+    - stage: Testing
+      name: "Testing Configuration Commands"
+      script: pytest raven/tests/config_command_test.py
+    
+    - stages: 
+      name: "Deploying to Development"
+      if: branch = development
+      script:
+        - echo $TRAVIS_COMMIT
