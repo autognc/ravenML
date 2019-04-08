@@ -13,7 +13,9 @@ jobs:
     - stage: Testing
       name: "Testing Configuration Commands"
       script:
+       - cd plugins
        - bash plugins/install_all.sh
+       - cd ..
   
     - stage: Deploy
       name: "Deploying to Development"
