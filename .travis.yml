@@ -1,33 +1,26 @@
 language: python
 python:
-  - "3.6"
+- '3.6'
 
 before_install:
-  - sudo rm -f /etc/boto.cfg
-  
+- sudo rm -f /etc/boto.cfg
 install:
-  - pip install -e git+https://github.com/spulec/moto@master#egg=moto
-  - pip install -r requirements.txt
-  - pip install --editable . 
-  - pip install halo
-  - cd plugins && bash install_all.sh && cd ..
+- pip install -e git+https://github.com/spulec/moto@master#egg=moto
+- pip install -r requirements.txt
+- pip install --editable .
+- pip install halo
+- cd plugins && bash install_all.sh && cd ..
 
 jobs:
   include:
-    - stage: Running Unit Tests 
-      name: "Unit Tests"
-      script:
-        - pytest
-
-    - stage: Deploy
-      name: "Deploying to Development"
-      if: branch = development
-      script:
-        - echo $TRAVIS_COMMIT
-
+  - stage: Running Unit Tests
+    name: Unit Tests
+    script:
+    - pytest
+  
 notifications:
-  slack: 
+  slack:
     rooms:
-      - texasspacecraftlab:pM977JUdiMXelhhpRZBgWvN2#builds
+    - texasspacecraftlab:pM977JUdiMXelhhpRZBgWvN2#builds
     on_success: always
     on_failure: always
