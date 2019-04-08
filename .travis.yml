@@ -8,7 +8,8 @@ install:
   - pip install --editable . 
   - pip install halo
 
-script: bash plugins/install_all.sh
+script: 
+  - bash plugins/install_all.sh
 
 jobs:
   include:
