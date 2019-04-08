@@ -4,13 +4,15 @@ python:
   - "3.6-dev"
  
 install:
-  - pip install -r requirements.txt 
+  - sudo pip install -r requirements.txt 
+  - sudo pip install halo
 
 jobs:
   include:
     - stage: Testing
       name: "Testing Configuration Commands"
-      script: pytest
+      script: 
+       - pytest
     
     - stages: 
       name: "Deploying to Development"
