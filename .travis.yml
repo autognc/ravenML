@@ -10,13 +10,18 @@ install:
 
 jobs:
   include:
-    - stage: Testing
-      name: "Testing Configuration Commands"
+    - stage: Installing plugins
+      name: "Installing plugins"
       script:
        - cd plugins
        - bash install_all.sh
        - cd ..
-  
+
+    - stage: Running Unit Tests 
+      name: "Unit Tests"
+      script:
+        - pytest
+        
     - stage: Deploy
       name: "Deploying to Development"
       if: branch = development
