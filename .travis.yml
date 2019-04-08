@@ -6,7 +6,6 @@ install:
   - pip install -r requirements.txt
   - pip install --editable . 
   - pip install halo
-  - bash plugins/install_all.sh
 
 jobs:
   include:
