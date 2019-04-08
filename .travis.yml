@@ -8,20 +8,27 @@ install:
   - pip install --editable . 
   - pip install halo
 
+before_script:
+  - cd plugins
+script:
+  - bash install_all.sh
+after_script:
+  - cd ..
+
 jobs:
   include:
-    - stage: Installing plugins
-      name: "Installing plugins"
-      script:
-       - cd plugins
-       - bash install_all.sh
-       - cd ..
+    # - stage: Installing plugins
+    #   name: "Install Plugins"
+    #   script:
+    #    - cd plugins
+    #    - bash install_all.sh
+    #    - cd ..
 
     - stage: Running Unit Tests 
       name: "Unit Tests"
       script:
         - pytest
-        
+
     - stage: Deploy
       name: "Deploying to Development"
       if: branch = development
