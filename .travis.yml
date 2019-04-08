@@ -7,13 +7,7 @@ install:
   - pip install -r requirements.txt
   - pip install --editable . 
   - pip install halo
-
-before_script:
-  - cd plugins
-script:
-  - bash install_all.sh
-after_script:
-  - cd ..
+  - cd plugins && bash install_all.sh && cd ..
 
 jobs:
   include:
