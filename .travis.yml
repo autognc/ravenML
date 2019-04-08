@@ -1,22 +1,21 @@
-sudo: true
-
 language: python
 python:
   - "3.6"
-  - "3.6-dev"
- 
+
 install:
-  - sudo pip install -r requirements.txt 
-  - sudo pip install halo
+  - pip install -r requirements.txt
+  - pip install --editable . 
+  - pip install halo
+  - ./plugins/install_all.sh
 
 jobs:
   include:
     - stage: Testing
       name: "Testing Configuration Commands"
-      script: 
-       - "pytest"
-    
-    - stages: 
+      script:
+       - pytest
+   
+    - stages:
       name: "Deploying to Development"
       if: branch = development
       script:
