@@ -11,6 +11,11 @@ install:
 - pip install halo
 - cd plugins && bash install_all.sh && cd ..
 
+branches:
+  only:
+  - master
+  - development
+  
 jobs:
   include:
   - stage: Running Unit Tests
