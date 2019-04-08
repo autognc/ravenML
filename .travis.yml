@@ -8,17 +8,14 @@ install:
   - pip install --editable . 
   - pip install halo
 
-script: 
-  - bash plugins/install_all.sh
-
 jobs:
   include:
     - stage: Testing
       name: "Testing Configuration Commands"
       script:
-       - pytest
-   
-    - stages:
+       - bash plugins/install_all.sh
+  
+    - stage: Deploy
       name: "Deploying to Development"
       if: branch = development
       script:
