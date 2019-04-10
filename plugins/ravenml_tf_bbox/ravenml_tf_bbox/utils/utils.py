@@ -28,7 +28,9 @@ def prepare_for_training(data_path, base_dir):
     print('Created models, model, train, eval folders')
 
     # create pipeline file based on a template and our desired path
-    pipeline_path = os.path.join(os.getcwd(), 'pipeline_template.config')
+
+    cur_dir = os.path.dirname(os.path.abspath(__file__))
+    pipeline_path = os.path.join(cur_dir, 'pipeline_template.config')
     print('PIPELINE PATH', pipeline_path)
     with open(pipeline_path) as template:
         pipeline_contents = template.read()
@@ -44,6 +46,7 @@ def prepare_for_training(data_path, base_dir):
         file.write(pipeline_contents)
     print('Created pipeline.config file inside models/model/')
 
+    # TODO: change to move all sharded chunks
     train_record = os.path.join(data_path, 'dev/standard/tf/train.record-00000-of-00001')
     test_record = os.path.join(data_path, 'dev/standard/tf/test.record-00000-of-00001')
 
@@ -52,9 +55,10 @@ def prepare_for_training(data_path, base_dir):
     print("Copied records to data directory")
 
     # copy model checkpoints to our train folder
-    checkpoint_folder = os.path.join(os.getcwd(), 'archs/ssd_mobilenet_v1_coco_2018_01_28')
-    checkpoint0_folder = os.path.join(os.getcwd(), 'checkpoint_0')
+    checkpoint_folder = os.path.join(cur_dir, 'archs/ssd_mobilenet_v1_coco_2018_01_28')
+    checkpoint0_folder = os.path.join(cur_dir, 'checkpoint_0')
     # file1 = os.path.join(checkpoint_folder, 'checkpoint')
+
     file1 = os.path.join(checkpoint_folder, 'model.ckpt.data-00000-of-00001')
     file2 = os.path.join(checkpoint_folder, 'model.ckpt.index')
     file3 = os.path.join(checkpoint_folder, 'model.ckpt.meta')

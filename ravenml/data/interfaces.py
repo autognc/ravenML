@@ -39,7 +39,7 @@ class Dataset(object):
         return len(glob.glob(str(path) + FOLD_DIR_PREFIX + '*'))
     
     def get_dataset_path(self):
-        path = local_cache.RAVEN_LOCAL_STORAGE_PATH / Path('datasets') / Path(self.name)
+        path = local_cache.RAVENML_LOCAL_STORAGE_PATH / Path('datasets') / Path(self.name)
         return path
     
     @property
