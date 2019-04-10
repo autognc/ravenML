@@ -9,7 +9,6 @@ install:
 - pip install -r requirements.txt
 - pip install --editable .
 - pip install halo
-- cd plugins && bash install_all.sh && cd ..
 
 branches:
   only:
