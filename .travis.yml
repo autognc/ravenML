@@ -1,0 +1,31 @@
+language: python
+python:
+- '3.6'
+
+cache: pip
+before_install:
+- sudo rm -f /etc/boto.cfg
+install:
+- pip install -e git+https://github.com/spulec/moto@master#egg=moto
+- pip install -r requirements.txt
+- pip install --editable .
+- pip install halo
+
+branches:
+  only:
+  - master
+  - development
+  
+jobs:
+  include:
+  - stage: Running Unit Tests
+    name: Unit Tests
+    script:
+    - pytest
+  
+notifications:
+  slack:
+    rooms:
+    - texasspacecraftlab:pM977JUdiMXelhhpRZBgWvN2#builds
+    on_success: always
+    on_failure: always

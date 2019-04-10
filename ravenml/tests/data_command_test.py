@@ -37,7 +37,6 @@ def setup_module():
     copyfile(test_data_dir / Path('config.yml'), global_cache.path / Path('config.yml'))
 
     config = get_config()
-    
     S3 = boto3.resource('s3', region_name='us-east-1')
     # We need to create the bucket since this is all in Moto's 'virtual' AWS account
     S3.create_bucket(Bucket=config['dataset_bucket_name'])
