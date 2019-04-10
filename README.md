@@ -3,10 +3,25 @@
 # raven
 Training CLI Tool
 
-## Installation
-You can install the raven pacakage from the root of this repository with the following command:
+## Installation with Conda
+Create the conda environment from the `environment.yml` file using:
+```bash
+conda env create -f environment.yml
 ```
+
+Activate the conda environment with:
+```bash
+conda activate raven # may require source activate raven on some systems
+```
+
+Install raven from the root of this repository using:
+```bash
 pip install --editable .
+```
+
+Install default plugins by navigating to the `plugins/` directory and using:
+```bash
+./install_all.sh
 ```
 
 ## Commitizen

@@ -8,7 +8,7 @@ Classes necessary for interfacing with the data command group.
 import os
 import glob
 from pathlib import Path
-import raven.utils.local_cache as local_cache
+import ravenml.utils.local_cache as local_cache
 
 ### CONSTANTS ###
 # these should be used in all possible situations to protect us
@@ -35,7 +35,7 @@ class Dataset(object):
         self._metadata = metadata
         
     def get_num_folds(self):
-        path = local_cache.RAVEN_LOCAL_STORAGE_PATH / Path(self.name) / 'dev'
+        path = local_cache.ravenml_LOCAL_STORAGE_PATH / Path(self.name) / 'dev'
         return len(glob.glob(str(path) + FOLD_DIR_PREFIX + '*'))
     
     @property

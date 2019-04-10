@@ -6,9 +6,9 @@ Contains the classes for interfacing with training command group.
 """
 
 from halo import Halo
-from raven.utils.question import cli_spinner, user_input, user_selects, user_confirms
-from raven.utils.dataset import get_dataset_names, get_dataset
-from raven.data.interfaces import Dataset
+from ravenml.utils.question import cli_spinner, user_input, user_selects, user_confirms
+from ravenml.utils.dataset import get_dataset_names, get_dataset
+from ravenml.data.interfaces import Dataset
 
 class TrainInput(object):
     """Represents a training input. Contains all plugin-independent information

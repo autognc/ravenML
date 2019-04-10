@@ -2,15 +2,15 @@
 Author(s):      Carson Schubert (carson.schubert14@gmail.com)  
 Date Created:   02/23/2019
 
-Command group for training in raven.
+Command group for training in ravenml.
 """
 
 import click
 from pkg_resources import iter_entry_points
 from click_plugins import with_plugins
-from raven.train.interfaces import TrainInput, TrainOutput
-from raven.utils.dataset import get_dataset_names, get_dataset
-from raven.utils.question import cli_spinner
+from ravenml.train.interfaces import TrainInput, TrainOutput
+from ravenml.utils.dataset import get_dataset_names, get_dataset
+from ravenml.utils.question import cli_spinner
     
 ### OPTIONS ###
 def no_user_callback(ctx, param, value):
@@ -46,7 +46,7 @@ local_opt = click.option(
 
 
 ### COMMANDS ###
-@with_plugins(iter_entry_points('raven.plugins.train'))
+@with_plugins(iter_entry_points('ravenml.plugins.train'))
 @click.group()
 @click.pass_context
 @no_user_opt
@@ -79,5 +79,5 @@ def list():
     """
     List available training plugins by name.
     """
-    for entry in iter_entry_points(group='raven.plugins.train', name=None):
+    for entry in iter_entry_points(group='ravenml.plugins.train', name=None):
         click.echo(entry.name)
