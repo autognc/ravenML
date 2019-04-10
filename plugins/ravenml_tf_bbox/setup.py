@@ -7,6 +7,14 @@ setup(
     packages=['ravenml_tf_bbox'],
     install_requires=[
         'Click',
+        'absl-py',
+        'cython',
+        'pycocotools',
+        'matplotlib',
+        'contextlib2',
+        'pillow',
+        'lxml',
+        'jupyter'
     ],
     entry_points='''
         [ravenml.plugins.train]
