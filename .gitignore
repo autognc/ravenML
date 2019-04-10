@@ -107,4 +107,7 @@ venv.bak/
 # mypy
 .mypy_cache/
 
+# compiled protos
+*pb2.py
+
 
