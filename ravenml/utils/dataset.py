@@ -86,6 +86,9 @@ def _ensure_dataset(name: str):
     config = get_config()
     DATASET_BUCKET = S3.Bucket(config['dataset_bucket_name'])
     for obj in DATASET_BUCKET.objects.filter(Prefix = name):
+        if obj.key[-1] == '/':
+            continue
+        
         if not dataset_cache.subpath_exists(obj.key):
             subpath = os.path.dirname(obj.key)
             dataset_cache.ensure_subpath_exists(subpath)

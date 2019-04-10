@@ -29,6 +29,8 @@ def train(ctx, train: TrainInput, kfold):
     # object creation, after which the created object is passed as "train"
     # after training, create an instance of TrainOutput and return it
 
+    tf.logging.set_verbosity(tf.logging.INFO)
+
     data_path = train.dataset.get_dataset_path()
 
     base_dir = train.artifact_path
@@ -43,7 +45,7 @@ def train(ctx, train: TrainInput, kfold):
         run_config=config,
         hparams=model_hparams.create_hparams(None),
         pipeline_config_path=pipeline_config_path,
-        train_steps=20)
+        train_steps=100)
     
     estimator = train_and_eval_dict['estimator']
     train_input_fn = train_and_eval_dict['train_input_fn']
@@ -58,6 +60,7 @@ def train(ctx, train: TrainInput, kfold):
         eval_on_train_input_fn,
         predict_input_fn,
         train_steps,
+        final_exporter_name='exported_model',
         eval_on_train_data=False)
 
     tf.estimator.train_and_evaluate(estimator, train_spec, eval_specs[0])
