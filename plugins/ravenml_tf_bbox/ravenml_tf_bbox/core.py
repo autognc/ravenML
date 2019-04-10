@@ -10,7 +10,7 @@ from absl import flags
 import tensorflow as tf
 from object_detection import model_hparams
 from object_detection import model_lib
-import shutil
+from utils.utils import prepare_for_training
 
 @click.group(help='TensorFlow Object Detection with bounding boxes.')
 @click.pass_context
@@ -28,7 +28,7 @@ def train(ctx, train: TrainInput, kfold):
     # object creation, after which the created object is passed as "train"
     # after training, create an instance of TrainOutput and return it
     print(kfold)
-    print(train.dataset)
+    print("path", train.dataset.get_dataset_path())
     print(train.artifact_path)
     result = TrainOutput()
     return result
