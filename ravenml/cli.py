@@ -15,7 +15,7 @@ from ravenml.utils.config import get_config, update_config
 ## OPTIONS
 clean_all_opt = click.option(
     '-a', '--all', is_flag=True,
-    help='Disable Inquirer prompts and use flags instead.'
+    help='Clear all cache contents, including saved ravenML configuration.'
 )
 
 @click.group()

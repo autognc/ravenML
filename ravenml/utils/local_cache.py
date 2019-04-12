@@ -64,11 +64,15 @@ class LocalCache(object):
 
     def clean(self):
         """Cleans local storage cache.
+        
+        Returns:
+            bool: True if successfully removed cache, false if no cache found for removal
         """
         try:
             shutil.rmtree(self.path)
+            return True
         except FileNotFoundError:
-            click.echo('Nothing to clean.')
+            return False
     
     @property
     def path(self):
