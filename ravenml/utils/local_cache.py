@@ -26,7 +26,6 @@ class LocalCache(object):
 
     def __init__(self, path=RAVENML_LOCAL_STORAGE_PATH):
         self._path = path
-        self.ensure_exists()
 
     def exists(self):
         """Checks if local storage cache exists on the machine.
