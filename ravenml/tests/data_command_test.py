@@ -50,6 +50,9 @@ def teardown_module():
     global_cache.clean()
     mock.stop()    
     
+    
+# NOTE: there are no automated tests for prompt behavior of commands, as prompt-toolkit
+# does not deal nicley with stdin not being an actual terminal (as pytest does it)
 
 ### TESTS ###
 def test_list_no_flags():

@@ -61,7 +61,7 @@ class LocalCache(object):
         """
         if not self.subpath_exists(subpath):
             self._make_subpath(subpath)
-        
+
     def clean(self):
         """Cleans local storage cache.
         """
