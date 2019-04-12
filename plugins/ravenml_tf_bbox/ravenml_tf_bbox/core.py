@@ -5,12 +5,11 @@ from __future__ import print_function
 import click
 from ravenml.train.options import kfold_opt, pass_train
 from ravenml.train.interfaces import TrainInput, TrainOutput
-
-from absl import flags
 import tensorflow as tf
+from absl import flags
 from object_detection import model_hparams
 from object_detection import model_lib
-from utils.utils import prepare_for_training
+from utils.utils import prepare_for_training, download_model_arch
 import os
 
 @click.group(help='TensorFlow Object Detection with bounding boxes.')
@@ -35,7 +34,13 @@ def train(ctx, train: TrainInput, kfold):
 
     base_dir = train.artifact_path
     base_dir = '/Users/nihaldhamani/Desktop/test'
-    prepare_for_training(data_path, base_dir)
+
+    # make into list for diff files
+    arch_model_name = 'ssd_mobilenet_v1_coco_2018_01_28'
+
+    arch_path = download_model_arch(arch_model_name)
+
+    prepare_for_training(data_path, base_dir, arch_path)
 
     model_dir = os.path.join(base_dir, 'models/model')
     pipeline_config_path = os.path.join(base_dir, 'models/model/pipeline.config')
@@ -68,4 +73,3 @@ def train(ctx, train: TrainInput, kfold):
     result = TrainOutput()
 
     return result
-
