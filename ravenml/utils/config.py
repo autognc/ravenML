@@ -45,5 +45,7 @@ def update_config(config: dict):
     Args:
         config (dict): new configuration as a dict
     """
+    # ensure our output location actually exists
+    global_cache.ensure_exists()
     with open(global_cache.path / Path('config.yml'), 'w') as outfile:
         yaml.dump(config, outfile, default_flow_style=False)

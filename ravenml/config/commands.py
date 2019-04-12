@@ -13,11 +13,18 @@ from ravenml.utils.question import user_input, user_confirms
 from ravenml.utils.config import CONFIG_FIELDS
 from ravenml.utils.local_cache import global_cache
 from ravenml.utils.config import get_config, update_config
+from ravenml.options import no_user_opt
 
 init()
     
 ### OPTIONS ###
+dataset_bucket_name_opt = click.option(
+    '-d', '--dataset-bucket', type=str, is_eager=True,
+    help='Dataset bucket name.')
 
+artifact_bucket_name_opt = click.option(
+    '-a', '--artifact-bucket', type=str, is_eager=True,
+    help='Artifact destination bucket name.')
 
 ### COMMANDS ###
 @click.group()
@@ -58,7 +65,10 @@ def show(ctx):
 
 @config.command()
 @click.pass_context
-def update(ctx):
+@no_user_opt
+@dataset_bucket_name_opt
+@artifact_bucket_name_opt
+def update(ctx, artifact_bucket, dataset_bucket):
     """Update current config.
     
     Args:
@@ -83,12 +93,16 @@ def update(ctx):
     loaded = len(config) > 0
     
     # update configuration fields
-    for field in CONFIG_FIELDS:
-        if loaded:
-            if user_confirms('Edit ' + field + '?'):
-                config[field] = user_input(field + ':', default=config[field]) 
-        else:
-            config[field] = user_input(field + ':')
+    if ctx.obj['NO_USER']:
+        config['artifact_bucket_name'] = artifact_bucket
+        config['dataset_bucket_name'] = dataset_bucket
+    else:
+        for field in CONFIG_FIELDS:
+            if loaded:
+                if user_confirms('Edit ' + field + '?'):
+                    config[field] = user_input(field + ':', default=config[field]) 
+            else:
+                config[field] = user_input(field + ':')
 
     # save updates
     update_config(config)
