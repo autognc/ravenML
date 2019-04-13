@@ -38,8 +38,7 @@ local_opt = click.option(
 @dataset_opt
 @local_opt
 def train(ctx, local, dataset):
-    """
-    Training commands.
+    """ Training commands.
     """
     if ctx.obj['NO_USER']:
         # if no_user is true, make a TrainInput from the other flags
@@ -61,8 +60,7 @@ def process_result(ctx, result: TrainOutput, local, dataset):
 
 @train.command()
 def list():
-    """
-    List available training plugins by name.
+    """List available training plugins by name.
     """
     for entry in iter_entry_points(group='ravenml.plugins.train', name=None):
         click.echo(entry.name)
