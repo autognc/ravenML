@@ -28,6 +28,7 @@ class Dataset(object):
     Attributes:
         name (str): name of the dataset 
         metadata (dict): metadata of dataset
+        path (Path): filepath to dataset
     """
     def __init__(self, name: str, metadata: dict, path: Path):
         self._name = name
