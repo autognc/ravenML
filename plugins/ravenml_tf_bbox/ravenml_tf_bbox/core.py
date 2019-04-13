@@ -75,6 +75,7 @@ def train(ctx, train: TrainInput, kfold):
 
     return result
 
+# stdout redirection found at https://codingdose.info/2018/03/22/supress-print-output-in-python/
 def _import_od():
     """ Imports the necessary libraries for object detection training.
     Used to avoid importing them at the top of the file where they get imported
@@ -99,6 +100,7 @@ def _import_od():
     # now restore stdout function
     sys.stdout = sys.__stdout__
     
+# this function is derived from https://stackoverflow.com/a/46878490
 def _dynamic_import(modulename, shortname = None, asfunction = False):
     """ Function to dynamically import python modules into the global scope.
 
