@@ -6,7 +6,6 @@ Command group for setting ravenml configuration.
 """
 
 import click
-import yaml
 from pathlib import Path
 from colorama import init, Fore
 from ravenml.utils.question import user_input, user_confirms

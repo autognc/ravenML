@@ -8,7 +8,6 @@ Command group for dataset exploration in ravenml.
 import pydoc
 import click
 from colorama import init, Fore
-from halo import Halo
 from ravenml.utils.dataset import get_dataset_names, get_dataset_metadata
 from ravenml.utils.question import cli_spinner
 

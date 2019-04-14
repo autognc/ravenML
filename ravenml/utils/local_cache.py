@@ -7,7 +7,6 @@ Handles local file caching for ravenml.
 
 import os
 import shutil
-import click
 from pathlib import Path
 
 # local cache root path for ravenml application

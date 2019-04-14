@@ -9,16 +9,11 @@ import click
 from pkg_resources import iter_entry_points
 from click_plugins import with_plugins
 from ravenml.train.interfaces import TrainInput, TrainOutput
-from ravenml.utils.dataset import get_dataset_names, get_dataset
+from ravenml.utils.dataset import get_dataset
 from ravenml.utils.question import cli_spinner
 from ravenml.options import no_user_opt
     
 ### OPTIONS ###
-# dataset_opt = click.option(
-#     '-d', '--dataset', 'dataset', type=click.Choice(get_dataset_names()), is_eager=True,
-#     help='Dataset to use for training.'
-# )
-
 dataset_opt = click.option(
     '-d', '--dataset', 'dataset', type=str, is_eager=True,
     help='Dataset to use for training.'

@@ -7,8 +7,8 @@ Utility module for managing Jigsaw created datasets.
 
 import os
 import json
-from pathlib import Path
 import boto3
+from pathlib import Path
 from ravenml.utils.local_cache import LocalCache, global_cache
 from ravenml.data.interfaces import Dataset
 from ravenml.utils.config import get_config

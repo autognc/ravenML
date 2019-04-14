@@ -5,15 +5,16 @@ Data Created:   03/18/2019
 Wrapper functions for prompting user input via questionary. Stolen from jigsaw.
 """
 
-from halo import Halo
-from questionary import prompt, Validator, ValidationError
 import sys
-
+from halo import Halo
+from questionary import prompt
 
 def in_test_mode():
-    if "pytest" in sys.modules:
-        return True
-    return False
+    """ Determines if we are running in an automated test or not.
+
+    This attribute is set via conftest.py in the ravenml/tests directory
+    """
+    return hasattr(sys, "_called_from_test")
 
 class Spinner:
     """Wrapper class to prevent bugs with Halo in pytest (see Issue #97)
