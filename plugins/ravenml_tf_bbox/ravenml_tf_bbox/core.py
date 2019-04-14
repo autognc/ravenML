@@ -32,7 +32,7 @@ def train(ctx, train: TrainInput, kfold):
     
     tf.logging.set_verbosity(tf.logging.INFO)
     
-    data_path = train.dataset.get_dataset_path()
+    data_path = str(train.dataset.path)
 
     if train.artifact_path is None:
         base_dir = str(bbox_cache.path / Path('temp'))
