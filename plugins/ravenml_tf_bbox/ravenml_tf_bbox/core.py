@@ -8,9 +8,10 @@ import io
 import sys
 import importlib
 from absl import flags
+from pathlib import Path
 from ravenml.train.options import kfold_opt, pass_train
 from ravenml.train.interfaces import TrainInput, TrainOutput
-from utils.utils import prepare_for_training, download_model_arch
+from utils.utils import prepare_for_training, download_model_arch, bbox_cache
 
 @click.group(help='TensorFlow Object Detection with bounding boxes.')
 @click.pass_context
@@ -33,8 +34,11 @@ def train(ctx, train: TrainInput, kfold):
     
     data_path = train.dataset.get_dataset_path()
 
-    base_dir = train.artifact_path
-    base_dir = '/home/carson/Desktop/test'
+    if train.artifact_path is None:
+        base_dir = str(bbox_cache.path / Path('temp'))
+    else:
+        base_dir = str(train.artifact_path)
+    # base_dir = '/home/carson/Desktop/test'
 
     # make into list for diff files
     arch_model_name = 'ssd_mobilenet_v1_coco_2018_01_28'

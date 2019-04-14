@@ -1,9 +1,11 @@
 import os
 import shutil
 import urllib.request
-from ravenml.utils.local_cache import global_cache
+from pathlib import Path
+from ravenml.utils.local_cache import LocalCache, global_cache
 import tarfile
 
+bbox_cache = LocalCache(global_cache.path / Path('tf-bbox'))
 
 def prepare_for_training(data_path, base_dir, arch_path):
 
@@ -87,21 +89,24 @@ def download_model_arch(model_name):
 
     print("Downloading model checkpoint...")
     url = 'http://download.tensorflow.org/models/object_detection/%s.tar.gz' %(model_name)
-    cache_path = global_cache.path
-    archs_path = os.path.join(cache_path, 'bbox_model_archs')
-    os.makedirs(archs_path, exist_ok=True)
+    
+    # make path within bbox cache 
+    bbox_cache.ensure_subpath_exists('bbox_model_archs')
+    archs_path = bbox_cache.path / Path('bbox_model_archs')
 
+    # download tar file
     tar_name = url.split('/')[-1]
-    model_path = os.path.join(archs_path, tar_name)
-    urllib.request.urlretrieve(url, model_path)
+    tar_path = archs_path / Path(tar_name)
+    urllib.request.urlretrieve(url, tar_path)
     
     print("Untarring model checkpoint...")
-    if (model_path.endswith("tar.gz")):
-        tar = tarfile.open(model_path, "r:gz")
+    if (tar_name.endswith("tar.gz")):
+        tar = tarfile.open(tar_path, "r:gz")
         tar.extractall(path=archs_path)
         tar.close()
 
-    untarred_path = os.path.join(archs_path, model_name)
-
+    untarred_path = archs_path / Path(model_name)
+    # get rid of tar file
+    os.remove(tar_path)
 
     return untarred_path
