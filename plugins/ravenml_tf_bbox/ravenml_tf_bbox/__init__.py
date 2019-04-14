@@ -9,3 +9,6 @@ if cwd not in sys.path:
     sys.path.append(cwd)
 if os.path.join(cwd, 'slim') not in sys.path:
     sys.path.append(os.path.join(cwd, 'slim'))
+
+os.chdir(cwd)
+subprocess.call(["protoc object_detection/protos/*.proto --python_out=."], shell=True)
