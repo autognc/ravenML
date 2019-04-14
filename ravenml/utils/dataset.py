@@ -56,7 +56,7 @@ def get_dataset(name: str):
         Dataset: dataset itself
     """
     _ensure_dataset(name)
-    return Dataset(name, get_dataset_metadata(name, no_check=True))
+    return Dataset(name, get_dataset_metadata(name, no_check=True), dataset_cache.path / Path(name))
  
 
 ### PRIVATE HELPERS ###
