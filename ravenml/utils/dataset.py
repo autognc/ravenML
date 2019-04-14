@@ -56,7 +56,7 @@ def get_dataset(name: str):
         Dataset: dataset itself
     """
     _ensure_dataset(name)
-    return Dataset(name, get_dataset_metadata(name, no_check=True))
+    return Dataset(name, get_dataset_metadata(name, no_check=True), dataset_cache.path / Path(name))
  
 
 ### PRIVATE HELPERS ###
@@ -86,11 +86,9 @@ def _ensure_dataset(name: str):
     config = get_config()
     DATASET_BUCKET = S3.Bucket(config['dataset_bucket_name'])
     for obj in DATASET_BUCKET.objects.filter(Prefix = name):
-        if obj.key[-1] == '/':
-            continue
-        
-        if not dataset_cache.subpath_exists(obj.key):
-            subpath = os.path.dirname(obj.key)
-            dataset_cache.ensure_subpath_exists(subpath)
-            storage_path = dataset_cache.path / Path(obj.key)
-            DATASET_BUCKET.download_file(obj.key, str(storage_path))
+        if obj.key[-1] != '/':
+            if not dataset_cache.subpath_exists(obj.key):
+                subpath = os.path.dirname(obj.key)
+                dataset_cache.ensure_subpath_exists(subpath)
+                storage_path = dataset_cache.path / Path(obj.key)
+                DATASET_BUCKET.download_file(obj.key, str(storage_path))
