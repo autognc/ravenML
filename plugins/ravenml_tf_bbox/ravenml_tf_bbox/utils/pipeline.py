@@ -27,9 +27,6 @@ else:
 
 for choice in defaults:
 
-    if choice == 'replace_path':
-        continue
-
     ans = input("would you like to change " + choice + " (y/n): ")
     if ans == 'y' or ans == 'Y':
         change = input("default=" + str(defaults[choice]).lower() + " change to: ")

@@ -1,13 +1,15 @@
 import os
 import shutil
+import tarfile
+import yaml
 import urllib.request
 from pathlib import Path
 from ravenml.utils.local_cache import LocalCache, global_cache
-import tarfile
+from ravenml.utils.question import user_confirms, user_input, user_selects
 
 bbox_cache = LocalCache(global_cache.path / Path('tf-bbox'))
 
-def prepare_for_training(data_path, base_dir, arch_path):
+def prepare_for_training(data_path, base_dir, arch_path, model_type):
 
     # create base dir if doesn't exist
     os.makedirs(base_dir, exist_ok=True)
@@ -31,24 +33,47 @@ def prepare_for_training(data_path, base_dir, arch_path):
     os.makedirs(eval_folder)
     os.makedirs(train_folder)
     print('Created models, model, train, eval folders')
+    
+    ## prompt for optimizers
+    defaults = {}
+    defaults_path = os.path.dirname(__file__) / Path(f'{model_type}_defaults.yml')
+    with open(defaults_path, 'r') as stream:
+        try:
+            defaults = yaml.safe_load(stream)
+        except yaml.YAMLError as exc:
+            print(exc)
 
-    # create pipeline file based on a template and our desired path
-
+    optimizer_name = user_selects('Choose optimizer', defaults.keys())
+    
+    ### create pipeline file based on a template and our desired path ###
+    default_config = defaults[optimizer_name]
+    
+    # load pipeline file
     cur_dir = os.path.dirname(os.path.abspath(__file__))
-    pipeline_path = os.path.join(cur_dir, 'pipeline_template.config')
+    pipeline_path = os.path.join(cur_dir, 'pipeline_configurable.config')
     with open(pipeline_path) as template:
         pipeline_contents = template.read()
     if base_dir.endswith('/') or base_dir.endswith(r"\\"):
-        pipeline_contents = pipeline_contents.replace('<replace>', base_dir)
+        pipeline_contents = pipeline_contents.replace('<replace_path>', base_dir)
     else:
         if os.name == 'nt':
-            pipeline_contents = pipeline_contents.replace('<replace>', base_dir + r"\\")
+            pipeline_contents = pipeline_contents.replace('<replace_path>', base_dir + r"\\")
         else:
-            pipeline_contents = pipeline_contents.replace('<replace>', base_dir + '/')
+            pipeline_contents = pipeline_contents.replace('<replace_path>', base_dir + '/')
+            
+    # prompt user for new configuration
+    user_config = _configuration_prompt(default_config)
+    for key, value in user_config.items():
+        formatted = '<replace_' + key + '>'
+        pipeline_contents = pipeline_contents.replace(formatted, str(value))
+
+    # output new configuation
     pipeline_path = os.path.join(model_folder, 'pipeline.config')
     with open(pipeline_path, 'w') as file:
         file.write(pipeline_contents)
     print('Created pipeline.config file inside models/model/')
+    
+    ###
 
     # TODO: change to move all sharded chunks
     train_record = os.path.join(data_path, 'dev/standard/tf/train.record-00000-of-00001')
@@ -109,3 +134,9 @@ def download_model_arch(model_name):
     os.remove(tar_path)
 
     return untarred_path
+    
+def _configuration_prompt(current_config: dict):
+    for field in current_config:
+        if user_confirms(f'Edit {field}? (default: {current_config[field]})'):
+            current_config[field] = user_input(f'{field}:', default=str(current_config[field]))
+    return current_config

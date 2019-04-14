@@ -6,11 +6,13 @@ import os
 import click
 import io
 import sys
+import yaml
 import importlib
 from absl import flags
 from pathlib import Path
 from ravenml.train.options import kfold_opt, pass_train
 from ravenml.train.interfaces import TrainInput, TrainOutput
+from ravenml.utils.question import user_selects
 from utils.utils import prepare_for_training, download_model_arch, bbox_cache
 
 @click.group(help='TensorFlow Object Detection with bounding boxes.')
@@ -40,13 +42,27 @@ def train(ctx, train: TrainInput, kfold):
         base_dir = str(train.artifact_path)
     # base_dir = '/home/carson/Desktop/test'
 
-    # make into list for diff files
-    arch_model_name = 'ssd_mobilenet_v1_coco_2018_01_28'
+    # load model choices
+    models = {}
+    models_path = os.path.dirname(__file__) / Path('utils') / Path('model_info.yml')
+    with open(models_path, 'r') as stream:
+        try:
+            models = yaml.safe_load(stream)
+        except yaml.YAMLError as exc:
+            print(exc)
+    
+    # prompt for model selection
+    model_name = user_selects('Choose model', models.keys())
+    model = models[model_name]
+    model_type = model['type']
+    model_url = model['url']
+    
+    # download model arch
+    arch_path = download_model_arch(model_url)
 
-    arch_path = download_model_arch(arch_model_name)
-
-    prepare_for_training(data_path, base_dir, arch_path)
-
+    # prepare directory for training/prompt for hyperparams
+    prepare_for_training(data_path, base_dir, arch_path, model_type)
+    
     model_dir = os.path.join(base_dir, 'models/model')
     pipeline_config_path = os.path.join(base_dir, 'models/model/pipeline.config')
 
