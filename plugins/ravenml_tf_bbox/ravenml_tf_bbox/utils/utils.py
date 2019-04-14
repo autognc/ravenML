@@ -36,7 +36,6 @@ def prepare_for_training(data_path, base_dir, arch_path):
 
     cur_dir = os.path.dirname(os.path.abspath(__file__))
     pipeline_path = os.path.join(cur_dir, 'pipeline_template.config')
-    print('PIPELINE PATH', pipeline_path)
     with open(pipeline_path) as template:
         pipeline_contents = template.read()
     if base_dir.endswith('/') or base_dir.endswith(r"\\"):
