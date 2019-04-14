@@ -8,7 +8,6 @@ Classes necessary for interfacing with the data command group.
 import os
 import glob
 from pathlib import Path
-import ravenml.utils.local_cache as local_cache
 
 ### CONSTANTS ###
 # these should be used in all possible situations to protect us
@@ -29,25 +28,29 @@ class Dataset(object):
     Attributes:
         name (str): name of the dataset 
         metadata (dict): metadata of dataset
+        path (Path): filepath to dataset
     """
-    def __init__(self, name: str, metadata: dict):
+    def __init__(self, name: str, metadata: dict, path: Path):
         self._name = name
         self._metadata = metadata
+        self._path = path
         
     def get_num_folds(self):
-        path = local_cache.ravenml_LOCAL_STORAGE_PATH / Path(self.name) / 'dev'
+        """Gets the number of folds this dataset supports for 
+        k-fold cross validation.
+
+        Returns:
+            int: number of folds
+        """
+        path = self.path / Path('dev')
         return len(glob.glob(str(path) + FOLD_DIR_PREFIX + '*'))
-    
-    def get_dataset_path(self):
-        path = local_cache.RAVENML_LOCAL_STORAGE_PATH / Path('datasets') / Path(self.name)
-        return path
     
     @property
     def name(self):
         return self._name
 
     @name.setter
-    def name(self, n):
+    def name(self, n: str):
         self._name = n
         
     @property
@@ -55,6 +58,13 @@ class Dataset(object):
         return self._metadata
     
     @metadata.setter
-    def metadata(self, metadata):
+    def metadata(self, metadata: dict):
         self._metadata = metadata
         
+    @property
+    def path(self):
+        return self._path
+    
+    @path.setter
+    def path(self, path: Path):
+        self._path = path

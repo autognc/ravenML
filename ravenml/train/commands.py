@@ -11,24 +11,9 @@ from click_plugins import with_plugins
 from ravenml.train.interfaces import TrainInput, TrainOutput
 from ravenml.utils.dataset import get_dataset_names, get_dataset
 from ravenml.utils.question import cli_spinner
+from ravenml.options import no_user_opt
     
 ### OPTIONS ###
-def no_user_callback(ctx, param, value):
-    # set in context
-    ctx.obj = {}
-    ctx.obj['NO_USER'] = value
-    # if we are in no_user mode, check all required arguments are there
-    if value:
-        for arg, value in ctx.params.items():
-            if value is None:
-                ctx.exit('You must supply the --%s argument when using --no-user!'%arg)
-    
-no_user_opt = click.option(
-    '--no-user', is_flag=True, callback=no_user_callback, expose_value=False,
-    help='Disable Inquirer prompts and use flags instead.'
-)
-
-# these commands must be eager so their values are available in the no_user_opt callback
 # dataset_opt = click.option(
 #     '-d', '--dataset', 'dataset', type=click.Choice(get_dataset_names()), is_eager=True,
 #     help='Dataset to use for training.'
@@ -53,8 +38,7 @@ local_opt = click.option(
 @dataset_opt
 @local_opt
 def train(ctx, local, dataset):
-    """
-    Training commands.
+    """ Training commands.
     """
     if ctx.obj['NO_USER']:
         # if no_user is true, make a TrainInput from the other flags
@@ -76,8 +60,7 @@ def process_result(ctx, result: TrainOutput, local, dataset):
 
 @train.command()
 def list():
-    """
-    List available training plugins by name.
+    """List available training plugins by name.
     """
     for entry in iter_entry_points(group='ravenml.plugins.train', name=None):
         click.echo(entry.name)

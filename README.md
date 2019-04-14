@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.com/autognc/ravenML.svg?branch=master)](https://travis-ci.com/autognc/ravenML)
+
 # raven
 Training CLI Tool
 
