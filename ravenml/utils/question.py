@@ -10,9 +10,11 @@ from halo import Halo
 from questionary import prompt
 
 def in_test_mode():
-    """ Determines if we are running in an automated test or not.
-
+    """ Determines if we are running in an automated test or not. 
     This attribute is set via conftest.py in the ravenml/tests directory
+    
+    Returns:
+        bool: true if in test mode, false otherwise
     """
     return hasattr(sys, "_called_from_test")
 
