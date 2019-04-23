@@ -8,6 +8,7 @@ Tests the ravenml data command group.
 import pytest
 import boto3
 import os
+import click
 from pathlib import Path
 from moto import mock_s3
 from shutil import copyfile
@@ -79,3 +80,9 @@ def test_inspect():
     with open(test_data_dir / Path('inspection_output.txt'), 'r') as myfile:
         data = myfile.read()
     assert result.output == data
+    
+def test_inspect_invalid_dataset_name():
+    """Tests the inspect subcommand with an invalid dataset name.
+    """
+    result = runner.invoke(inspect, ['bad_dataset_name'])
+    assert result.exit_code == click.exceptions.BadParameter.exit_code

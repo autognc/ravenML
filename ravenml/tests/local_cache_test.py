@@ -25,9 +25,8 @@ def setup_module():
     """ Sets up the module for testing.
     """
     # alter global and dataset cache objects used throughout ravenml for local caching
-    # global_cache.path = test_dir / Path('.testing')
+    global_cache.path = test_dir / Path('.testing')
     # global_cache.ensure_exists()
-    # dataset_cache.path = global_cache.path / Path('datasets')
     
     # copy config file from test data into temporary testing cache
     # copyfile(test_data_dir / Path('config.yml'), global_cache.path / Path('config.yml'))
@@ -35,7 +34,7 @@ def setup_module():
 def teardown_module():
     """ Tears down the module after testing.
     """
-    # global_cache.clean()
+    global_cache.clean()
     
 
 # NOTE: there are no automated tests for prompt behavior of commands, as prompt-toolkit

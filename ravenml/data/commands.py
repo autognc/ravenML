@@ -65,8 +65,11 @@ def inspect(dataset_name: str):
     Args:
         dataset_name: string name of the dataset to inspect
     """
-    metadata = cli_spinner("Downloading dataset metadata from S3...", get_dataset_metadata, dataset_name)
-    click.echo(_stringify_metadata(metadata, colored=True))
+    try:
+        metadata = cli_spinner("Downloading dataset metadata from S3...", get_dataset_metadata, dataset_name)
+        click.echo(_stringify_metadata(metadata, colored=True))
+    except ValueError as e:
+        raise click.exceptions.BadParameter(dataset_name, param=dataset_name, param_hint='dataset name')
 
 
 ### HELPERS ###
