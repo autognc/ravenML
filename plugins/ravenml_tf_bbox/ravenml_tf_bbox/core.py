@@ -29,18 +29,19 @@ def train(ctx, train: TrainInput, kfold):
     # If it does not, the constructor is called AUTOMATICALLY
     # by Click because the @pass_train decorator is set to ensure
     # object creation, after which the created object is passed as "train"
-    # after training, create an instance of TrainOutput and return it
-    _import_od()
     
+    # NOTE: after training, you must create an instance of TrainOutput and return it
+    # import necessary libraries
+    _import_od()
     tf.logging.set_verbosity(tf.logging.INFO)
     
     data_path = str(train.dataset.path)
 
+    # set base directory for model artifacts 
     if train.artifact_path is None:
         base_dir = str(bbox_cache.path / Path('temp'))
     else:
         base_dir = str(train.artifact_path)
-    # base_dir = '/home/carson/Desktop/test'
 
     # load model choices
     models = {}
@@ -61,7 +62,8 @@ def train(ctx, train: TrainInput, kfold):
     arch_path = download_model_arch(model_url)
 
     # prepare directory for training/prompt for hyperparams
-    prepare_for_training(data_path, base_dir, arch_path, model_type)
+    if not prepare_for_training(data_path, base_dir, arch_path, model_type):
+        ctx.exit('Training cancelled.')
     
     model_dir = os.path.join(base_dir, 'models/model')
     pipeline_config_path = os.path.join(base_dir, 'models/model/pipeline.config')

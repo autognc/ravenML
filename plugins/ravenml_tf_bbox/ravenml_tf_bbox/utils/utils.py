@@ -2,26 +2,36 @@ import os
 import shutil
 import tarfile
 import yaml
+import click
 import urllib.request
+from colorama import init, Fore
 from pathlib import Path
 from ravenml.utils.local_cache import LocalCache, global_cache
 from ravenml.utils.question import user_confirms, user_input, user_selects
+
+init()
 
 bbox_cache = LocalCache(global_cache.path / Path('tf-bbox'))
 
 def prepare_for_training(data_path, base_dir, arch_path, model_type):
 
-    # create base dir if doesn't exist
-    os.makedirs(base_dir, exist_ok=True)
+    # check if base_dir exists already and prompt before overwriting
+    if os.path.exists(base_dir):
+        if user_confirms('Artifact storage location contains old data. Overwrite?'):
+            shutil.rmtree(base_dir)
+        else:
+            return False
+    os.makedirs(base_dir)
+    click.echo('Created artifact folder.')
     
     # create a data folder within our base_directory
     os.makedirs(os.path.join(base_dir, 'data'))
-    print('Created data folder')
+    click.echo('Created data folder.')
 
     # copy object-detection.pbtxt from utilities and move into data folder
     pbtxt_file = os.path.join(data_path, 'label_map.pbtxt')
     shutil.copy(pbtxt_file, os.path.join(base_dir, 'data'))
-    print('Placed label_map.pbtxt file inside data folder')
+    click.echo('Placed label_map.pbtxt file inside data folder.')
 
     # create models, model, eval, and train folders
     models_folder = os.path.join(base_dir, 'models')
@@ -32,7 +42,7 @@ def prepare_for_training(data_path, base_dir, arch_path, model_type):
     train_folder = os.path.join(model_folder, 'train')
     os.makedirs(eval_folder)
     os.makedirs(train_folder)
-    print('Created models, model, train, eval folders')
+    click.echo('Created models, model, train, eval folders')
     
     ## prompt for optimizers
     defaults = {}
@@ -46,6 +56,8 @@ def prepare_for_training(data_path, base_dir, arch_path, model_type):
     optimizer_name = user_selects('Choose optimizer', defaults.keys())
     
     ### create pipeline file based on a template and our desired path ###
+    
+    # grab default config for the chosen optimizer
     default_config = defaults[optimizer_name]
     
     # load pipeline file
@@ -73,17 +85,15 @@ def prepare_for_training(data_path, base_dir, arch_path, model_type):
     pipeline_path = os.path.join(model_folder, 'pipeline.config')
     with open(pipeline_path, 'w') as file:
         file.write(pipeline_contents)
-    print('Created pipeline.config file inside models/model/')
+    click.echo('Created pipeline.config file inside models/model/.')
     
-    ###
-
     # TODO: change to move all sharded chunks
     train_record = os.path.join(data_path, 'dev/standard/tf/train.record-00000-of-00001')
     test_record = os.path.join(data_path, 'dev/standard/tf/test.record-00000-of-00001')
 
     shutil.copy(train_record, os.path.join(base_dir, 'data'))
     shutil.copy(test_record, os.path.join(base_dir, 'data'))
-    print("Copied records to data directory")
+    click.echo("Copied records to data directory.")
 
     # copy model checkpoints to our train folder
     checkpoint_folder = os.path.join(arch_path)
@@ -108,37 +118,48 @@ def prepare_for_training(data_path, base_dir, arch_path, model_type):
     checkpoint_contents = checkpoint_contents.replace('<replace>', train_folder)
     with open(os.path.join(train_folder, 'checkpoint'), 'w') as new_cf:
         new_cf.write(checkpoint_contents)
-    print('Added model checkpoints to models/model/train folder')
+    click.echo('Added model checkpoints to models/model/train folder.')
+    
+    return True
 
 
 def download_model_arch(model_name):
 
-    print("Downloading model checkpoint...")
     url = 'http://download.tensorflow.org/models/object_detection/%s.tar.gz' %(model_name)
     
-    # make path within bbox cache 
+    # make paths within bbox cache 
     bbox_cache.ensure_subpath_exists('bbox_model_archs')
     archs_path = bbox_cache.path / Path('bbox_model_archs')
-
-    # download tar file
-    tar_name = url.split('/')[-1]
-    tar_path = archs_path / Path(tar_name)
-    urllib.request.urlretrieve(url, tar_path)
-    
-    print("Untarring model checkpoint...")
-    if (tar_name.endswith("tar.gz")):
-        tar = tarfile.open(tar_path, "r:gz")
-        tar.extractall(path=archs_path)
-        tar.close()
-
     untarred_path = archs_path / Path(model_name)
-    # get rid of tar file
-    os.remove(tar_path)
+    
+    if not bbox_cache.subpath_exists(untarred_path):
+        click.echo("Model checkpoint not found in cache. Downloading...")
+        # download tar file
+        tar_name = url.split('/')[-1]
+        tar_path = archs_path / Path(tar_name)
+        urllib.request.urlretrieve(url, tar_path)
+        
+        click.echo("Untarring model checkpoint...")
+        if (tar_name.endswith("tar.gz")):
+            tar = tarfile.open(tar_path, "r:gz")
+            tar.extractall(path=archs_path)
+            tar.close()
 
+        # get rid of tar file
+        os.remove(tar_path)
+    else:
+        click.echo('Model checkpoint found in cache.')
     return untarred_path
     
 def _configuration_prompt(current_config: dict):
-    for field in current_config:
-        if user_confirms(f'Edit {field}? (default: {current_config[field]})'):
-            current_config[field] = user_input(f'{field}:', default=str(current_config[field]))
+    _print_config(current_config)
+    if user_confirms('Edit default configuration?'):
+        for field in current_config:
+            if user_confirms(f'Edit {field}? (default: {current_config[field]})'):
+                current_config[field] = user_input(f'{field}:', default=str(current_config[field]))
     return current_config
+
+def _print_config(config: dict):
+    click.echo('Current configuration:')
+    for field, value in config.items():
+        click.echo(Fore.GREEN + f'{field}: ' + Fore.WHITE + f'{value}')
