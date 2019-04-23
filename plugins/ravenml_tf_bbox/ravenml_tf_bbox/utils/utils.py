@@ -36,7 +36,7 @@ def prepare_for_training(data_path, base_dir, arch_path, model_type):
     
     ## prompt for optimizers
     defaults = {}
-    defaults_path = os.path.dirname(__file__) / Path(f'{model_type}_defaults.yml')
+    defaults_path = os.path.dirname(__file__) / Path('model_defaults') / Path(f'{model_type}_defaults.yml')
     with open(defaults_path, 'r') as stream:
         try:
             defaults = yaml.safe_load(stream)
@@ -50,7 +50,9 @@ def prepare_for_training(data_path, base_dir, arch_path, model_type):
     
     # load pipeline file
     cur_dir = os.path.dirname(os.path.abspath(__file__))
-    pipeline_path = os.path.join(cur_dir, 'pipeline_configurable.config')
+    pipeline_name = f'{model_type}_{optimizer_name.lower()}.config'
+    pipeline_path = os.path.join(cur_dir, 'pipeline_templates', pipeline_name)
+
     with open(pipeline_path) as template:
         pipeline_contents = template.read()
     if base_dir.endswith('/') or base_dir.endswith(r"\\"):
