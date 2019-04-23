@@ -17,7 +17,7 @@ from ravenml.utils.config import get_config
 dataset_cache = LocalCache(path=global_cache.path / Path('datasets'))
 
 ### PUBLIC METHODS ###
-def get_dataset_names():
+def get_dataset_names() -> list:
     """Retrieves the names of all available datasets.
 
     Returns:
@@ -32,7 +32,7 @@ def get_dataset_names():
             dataset_names.append(obj.get('Prefix')[:-1])
     return dataset_names
 
-def get_dataset_metadata(name: str, no_check=False):
+def get_dataset_metadata(name: str, no_check=False) -> dict:
     """Retrieves dataset metadata. Downloads from S3 if necessary.
 
     Args:
@@ -46,7 +46,7 @@ def get_dataset_metadata(name: str, no_check=False):
         _ensure_metadata(name)
     return json.load(open(dataset_cache.path / Path(name) / 'metadata.json'))
 
-def get_dataset(name: str):
+def get_dataset(name: str) -> Dataset:
     """Retrives a dataset. Downloads from S3 if necessary.
 
     Args:

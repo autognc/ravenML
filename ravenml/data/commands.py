@@ -69,7 +69,7 @@ def inspect(dataset_name: str):
 
 
 ### HELPERS ###
-def _stringify_metadata(metadata: dict, colored=False):
+def _stringify_metadata(metadata: dict, colored=False) -> str:
     """Turn metadata into a nicely formatted string for displaying.
 
     Args:
@@ -88,7 +88,7 @@ def _stringify_metadata(metadata: dict, colored=False):
                 result += str(key).upper() + ' ' + str(val) + '\n'
     return result
 
-def _get_detailed_dataset_info(datasets: list):
+def _get_detailed_dataset_info(datasets: list) -> str:
     """Stringifies and concatenates metadata for a list of datasets.
 
     Args:

@@ -8,8 +8,9 @@ Wrapper functions for prompting user input via questionary. Stolen from jigsaw.
 import sys
 from halo import Halo
 from questionary import prompt
+from typing import Union
 
-def in_test_mode():
+def in_test_mode() -> bool:
     """ Determines if we are running in an automated test or not. 
     This attribute is set via conftest.py in the ravenml/tests directory
     
@@ -38,7 +39,7 @@ class Spinner:
             return
         self._spinner.succeed(text=text)
 
-def user_input(message: str, default="", validator=None):
+def user_input(message: str, default="", validator=None) -> str:
     """Prompts the user for input
     
     Args:
@@ -73,7 +74,7 @@ def user_input(message: str, default="", validator=None):
     answer = prompt(question)
     return answer["value"]
 
-def user_selects(message: str, choices: list, selection_type="list", sort_choices=True):
+def user_selects(message: str, choices: list, selection_type="list", sort_choices=True) -> Union[str, list]:
     """Prompts the user to select a choice(s) given a message
     
     Args:
@@ -101,7 +102,7 @@ def user_selects(message: str, choices: list, selection_type="list", sort_choice
     answer = prompt(question)
     return answer['value']
     
-def user_confirms(message: str, default=False):
+def user_confirms(message: str, default=False) -> bool:
     """Prompts the user to confirm an action by typing y/n
     
     Args:

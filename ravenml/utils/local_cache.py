@@ -26,7 +26,7 @@ class LocalCache(object):
     def __init__(self, path=RAVENML_LOCAL_STORAGE_PATH):
         self._path = path
 
-    def exists(self):
+    def exists(self) -> bool:
         """Checks if local storage cache exists on the machine.
         
         Returns:
@@ -40,7 +40,7 @@ class LocalCache(object):
         if not self.exists():
             self._create()
 
-    def subpath_exists(self, subpath: str):
+    def subpath_exists(self, subpath: str) -> bool:
         """Checks if a subpath within the local storage_cache exists.
         
         Args:
@@ -60,7 +60,7 @@ class LocalCache(object):
         if not self.subpath_exists(subpath):
             self._make_subpath(subpath)
 
-    def clean(self):
+    def clean(self) -> bool:
         """Cleans local storage cache.
         
         Returns:
