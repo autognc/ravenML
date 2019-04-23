@@ -18,15 +18,15 @@ EXCLUDED_METADATA = ['filters', 'transforms', 'image_ids']
 ### OPTIONS ###
 detailed_opt = click.option(
     '-d', '--detailed', 'detailed', is_flag=True,
-    help='Get detailed information about datasets.'
+    help='Show detailed metadata about datasets.'
 )
 
 
 ### COMMANDS ###
-@click.group()
+@click.group(help='Dataset exploration commands.')
 @click.pass_context
 def data(ctx):
-    """Dataset exploration commands.
+    """Dataset exploration command group.
     
     Args:
         ctx (Context): click context object
@@ -38,13 +38,13 @@ def data(ctx):
 def process_result(ctx, result):
     pass
 
-@data.command()
+@data.command(help='List available datasets.')
 @detailed_opt
 def list(detailed: bool):
     """List available datasets.
     
     Args:
-        detailed: T/F show detailed view
+        detailed (bool): T/F show detailed view
     """
     dataset_names = cli_spinner("Finding datasets on S3...", get_dataset_names)
 
@@ -56,25 +56,25 @@ def list(detailed: bool):
     for name in dataset_names:
         click.echo(name)
 
-@data.command()
+@data.command(help='See detailed metadata about a dataset.')
 @click.argument('dataset_name')
 def inspect(dataset_name: str):
-    """See detailed information about a dataset.
+    """See detailed metadata about a dataset.
 
     Args:
-        dataset_name: string name of the dataset to inspect
+        dataset_name (str): string name of the dataset to inspect
     """
     metadata = cli_spinner("Downloading dataset metadata from S3...", get_dataset_metadata, dataset_name)
     click.echo(_stringify_metadata(metadata, colored=True))
 
 
 ### HELPERS ###
-def _stringify_metadata(metadata, colored=False):
+def _stringify_metadata(metadata: dict, colored=False):
     """Turn metadata into a nicely formatted string for displaying.
 
     Args:
-        metadata: dictionary of metadata
-        colored: whether to colorize string, default False
+        metadata (dict): dictionary of metadata
+        colored (bool, optional): whether to colorize string, default False
 
     Returns:
         str: formatted metadata string
@@ -88,11 +88,11 @@ def _stringify_metadata(metadata, colored=False):
                 result += str(key).upper() + ' ' + str(val) + '\n'
     return result
 
-def _get_detailed_dataset_info(datasets):
+def _get_detailed_dataset_info(datasets: list):
     """Stringifies and concatenates metadata for a list of datasets.
 
     Args:
-        datasets: list of dataset names
+        datasets (list): list of dataset names
 
     Returns:
         str: concatenated and delimited metadata string for each dataset.

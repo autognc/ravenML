@@ -26,19 +26,19 @@ artifact_bucket_name_opt = click.option(
     help='Artifact destination bucket name.')
 
 ### COMMANDS ###
-@click.group()
+@click.group(help='Configuration commands.')
 @click.pass_context
-def config(ctx):
-    """Configuration commands.
+def config(ctx: click.Context):
+    """Configuration command group.
 
     Args:
         ctx (Context): click context object
     """
     ctx.obj = False     # flag to indicate if entering update from show
 
-@config.command()
+@config.command(help='Show current config.')
 @click.pass_context
-def show(ctx):
+def show(ctx: click.Context):
     """Show current config.
     
     Args:
@@ -62,16 +62,18 @@ def show(ctx):
             ctx.obj = True
             ctx.invoke(update)
 
-@config.command()
+@config.command(help='Update current config.')
 @click.pass_context
 @no_user_opt
 @dataset_bucket_name_opt
 @artifact_bucket_name_opt
-def update(ctx, artifact_bucket, dataset_bucket):
+def update(ctx: click.Context, artifact_bucket: str, dataset_bucket: str):
     """Update current config.
     
     Args:
         ctx (Context): click context object
+        artifact_bucket (str): artifact bucket name. None if not in no-user mode
+        dataset_bucket (str): dataset bucket name. None if not in no-user mode
     """
     config = {}
     try: 

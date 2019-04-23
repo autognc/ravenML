@@ -87,7 +87,7 @@ class LocalCache(object):
         """
         os.makedirs(self.path)
 
-    def _make_subpath(self, subpath):
+    def _make_subpath(self, subpath: str):
         """Creates a subpath within the local storage cache.
 
         Not for external use (use ensure_subpath_exists() instead)

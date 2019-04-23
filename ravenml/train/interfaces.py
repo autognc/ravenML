@@ -50,7 +50,7 @@ class TrainInput(object):
         return self._artifact_path
         
     @artifact_path.setter
-    def artifact_path(self, new_path):
+    def artifact_path(self, new_path: str):
         self._artifact_path = new_path
 
 class TrainOutput(object):

@@ -9,7 +9,14 @@ Standard options which should be used by ravenml plugins.
 import click
 
 ### HELPERS/CALLBACKS ###
-def no_user_callback(ctx, param, value):
+def no_user_callback(ctx, param: click.core.Option, value: bool):
+    """Callback used by the no-user option. Evaluates all loaded parameters
+    and if any are still None, throws an error.
+
+    Args:
+        param (click.core.Option): option callback has been called by
+        value (bool): value of no-user option, default false
+    """
     # set in context
     ctx.obj = {}
     ctx.obj['NO_USER'] = value
@@ -17,7 +24,8 @@ def no_user_callback(ctx, param, value):
     if value:
         for arg, value in ctx.params.items():
             if value is None:
-                ctx.exit('You must supply the --%s argument when using --no-user!'%arg)
+                # ctx.exit('You must supply the --%s argument when using --no-user!'%arg)
+                raise click.exceptions.BadParameter('bad bad', ctx=ctx, param=arg, param_hint=str(arg))
 
 # NOTE: Any option intended to be used alongside the no_user_opt on a command
 # must have their is_eager flag set to TRUE for no_user_opt to work properly

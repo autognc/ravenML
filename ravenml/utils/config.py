@@ -15,6 +15,9 @@ CONFIG_FIELDS = sorted(['dataset_bucket_name', 'artifact_bucket_name'])
 
 def get_config():
     """Retrieves the current configuration.
+    
+    Returns:
+        dict: current configuration
 
     Raises:
         ValueError: If a required field is missing or an invalid field is found.

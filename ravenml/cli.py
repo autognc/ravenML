@@ -23,16 +23,20 @@ clean_all_opt = click.option(
 
 
 ### COMMANDS ###
-@click.group()
+@click.group(help='Welcome to ravenML!')
 def cli():
     """ Top level command group for ravenml.
     """
     pass
     
-@cli.command()
+@cli.command(help='Cleans locally saved ravenML cache files.')
 @clean_all_opt
-def clean(all):
+def clean(all: bool):
     """ Cleans locally saved ravenml cache files.
+
+    Args:
+        all (bool): T/F whether to clean all files from cache, including
+            configuration YAML, default false
     """
     if all:
         if not global_cache.clean():

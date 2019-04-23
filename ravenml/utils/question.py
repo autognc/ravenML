@@ -38,7 +38,7 @@ class Spinner:
             return
         self._spinner.succeed(text=text)
 
-def user_input(message, default="", validator=None):
+def user_input(message: str, default="", validator=None):
     """Prompts the user for input
     
     Args:
@@ -73,7 +73,7 @@ def user_input(message, default="", validator=None):
     answer = prompt(question)
     return answer["value"]
 
-def user_selects(message, choices, selection_type="list", sort_choices=True):
+def user_selects(message: str, choices: list, selection_type="list", sort_choices=True):
     """Prompts the user to select a choice(s) given a message
     
     Args:
@@ -101,7 +101,7 @@ def user_selects(message, choices, selection_type="list", sort_choices=True):
     answer = prompt(question)
     return answer['value']
     
-def user_confirms(message, default=False):
+def user_confirms(message: str, default=False):
     """Prompts the user to confirm an action by typing y/n
     
     Args:
