@@ -6,6 +6,7 @@ Contains the classes for interfacing with training command group.
 """
 
 import os
+from pathlib import Path
 from halo import Halo
 from ravenml.utils.question import cli_spinner, user_input, user_selects, user_confirms
 from ravenml.utils.dataset import get_dataset_names, get_dataset
@@ -59,10 +60,39 @@ class TrainOutput(object):
     """Training Output class
 
     Args:
+        metadata (dict): metadata associated with training
+        artifact_path (Path): path to root of training artifacts
 
     Attributes:
-    
+        metadata (dict): metadata associated with training
+        artifact_path (Path): path to root of training artifacts
     """
-    def __init__(self):
-        pass
+    def __init__(self, metadata: dict, artifact_path: Path, model_path: Path):
+        self._metadata = metadata
+        self._artifact_path = artifact_path
+        self._model_path = model_path
+        # self._extra_files = extras
         
+    @property
+    def metadata(self):
+        return self._metadata
+    
+    @metadata.setter
+    def metadata(self, metadata):
+        self._metadata = metadata
+    
+    @property
+    def artifact_path(self):
+        return self._artifact_path
+        
+    @artifact_path.setter
+    def artifact_path(self, new_path):
+        self._artifact_path = new_path
+        
+    @property
+    def model_path(self):
+        return self._model_path
+    
+    @model_path.setter
+    def model_path(self, new_path):
+        self._model_path = new_path

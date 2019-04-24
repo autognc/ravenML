@@ -10,9 +10,11 @@ import yaml
 import importlib
 from absl import flags
 from pathlib import Path
+from datetime import datetime
 from ravenml.train.options import kfold_opt, pass_train
 from ravenml.train.interfaces import TrainInput, TrainOutput
-from ravenml.utils.question import user_selects
+from ravenml.data.interfaces import Dataset
+from ravenml.utils.question import user_selects, user_input
 from utils.utils import prepare_for_training, download_model_arch, bbox_cache
 
 @click.group(help='TensorFlow Object Detection with bounding boxes.')
@@ -35,6 +37,10 @@ def train(ctx, train: TrainInput, kfold):
     _import_od()
     tf.logging.set_verbosity(tf.logging.INFO)
     
+    # create training metadata dict
+    metadata = {}
+    _fill_basic_metadata(metadata, train.dataset)
+
     data_path = str(train.dataset.path)
 
     # set base directory for model artifacts 
@@ -57,12 +63,13 @@ def train(ctx, train: TrainInput, kfold):
     model = models[model_name]
     model_type = model['type']
     model_url = model['url']
+    metadata['model'] = model_name
     
     # download model arch
     arch_path = download_model_arch(model_url)
 
     # prepare directory for training/prompt for hyperparams
-    if not prepare_for_training(data_path, base_dir, arch_path, model_type):
+    if not prepare_for_training(data_path, base_dir, arch_path, model_type, metadata):
         ctx.exit('Training cancelled.')
     
     model_dir = os.path.join(base_dir, 'models/model')
@@ -91,11 +98,23 @@ def train(ctx, train: TrainInput, kfold):
         final_exporter_name='exported_model',
         eval_on_train_data=False)
 
+    # actually train
     tf.estimator.train_and_evaluate(estimator, train_spec, eval_specs[0])
+    
+    # final metadata and return of TrainOutput object
+    metadata['date_completed_at'] = datetime.utcnow().isoformat() + "Z"
+    model_path = Path(base_dir) / Path('models') / Path('model') / Path('export') \
+                    / Path ('exported_model')
 
-    result = TrainOutput()
-
+    model_path = Path(os.listdir(model_path)[0]) / Path('saved_model.pb')        
+    result = TrainOutput(metadata, Path(base_dir), model_path)
     return result
+    
+def _fill_basic_metadata(metadata: dict, dataset: Dataset):
+    metadata['created_by'] = user_input('Please enter your first and last name:')
+    metadata['comments'] = user_input('Please enter any comments about this training:')
+    metadata['date_started_at'] = datetime.utcnow().isoformat() + "Z"
+    metadata['dataset_used'] = dataset.metadata
 
 # stdout redirection found at https://codingdose.info/2018/03/22/supress-print-output-in-python/
 def _import_od():

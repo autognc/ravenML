@@ -6,6 +6,7 @@ Command group for training in ravenml.
 """
 
 import click
+import json
 from pkg_resources import iter_entry_points
 from click_plugins import with_plugins
 from ravenml.train.interfaces import TrainInput, TrainOutput
@@ -55,7 +56,9 @@ def train(ctx, local, dataset):
 def process_result(ctx, result: TrainOutput, local, dataset):
     # need to consider issues with this being called on every call to train
     if ctx.invoked_subcommand != 'list':
-        click.echo('Upload model artifacts here.')
+        print(json.dumps(result.metadata, indent=2))
+        click.echo(result.artifact_path)
+        click.echo(result.model_path)
     return result
 
 @train.command()

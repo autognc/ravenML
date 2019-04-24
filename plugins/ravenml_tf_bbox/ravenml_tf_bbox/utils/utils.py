@@ -13,7 +13,9 @@ init()
 
 bbox_cache = LocalCache(global_cache.path / Path('tf-bbox'))
 
-def prepare_for_training(data_path, base_dir, arch_path, model_type):
+def prepare_for_training(data_path, base_dir, arch_path, model_type, metadata: dict):
+
+    hp_metadata = {}
 
     # check if base_dir exists already and prompt before overwriting
     if os.path.exists(base_dir):
@@ -40,7 +42,7 @@ def prepare_for_training(data_path, base_dir, arch_path, model_type):
     os.makedirs(model_folder)
     eval_folder = os.path.join(model_folder, 'eval')
     train_folder = os.path.join(model_folder, 'train')
-    os.makedirs(eval_folder)
+    # os.makedirs(eval_folder)
     os.makedirs(train_folder)
     click.echo('Created models, model, train, eval folders')
     
@@ -54,6 +56,7 @@ def prepare_for_training(data_path, base_dir, arch_path, model_type):
             print(exc)
 
     optimizer_name = user_selects('Choose optimizer', defaults.keys())
+    hp_metadata['optimizer'] = optimizer_name
     
     ### create pipeline file based on a template and our desired path ###
     
@@ -77,6 +80,10 @@ def prepare_for_training(data_path, base_dir, arch_path, model_type):
             
     # prompt user for new configuration
     user_config = _configuration_prompt(default_config)
+    # add to hyperparameter metadata dict
+    for field, value in user_config.items():
+        hp_metadata[field] = value
+    # replace at all instances in config file
     for key, value in user_config.items():
         formatted = '<replace_' + key + '>'
         pipeline_contents = pipeline_contents.replace(formatted, str(value))
@@ -120,6 +127,8 @@ def prepare_for_training(data_path, base_dir, arch_path, model_type):
         new_cf.write(checkpoint_contents)
     click.echo('Added model checkpoints to models/model/train folder.')
     
+    metadata['hyperparemeters'] = hp_metadata
+    
     return True
 
 
@@ -132,6 +141,7 @@ def download_model_arch(model_name):
     archs_path = bbox_cache.path / Path('bbox_model_archs')
     untarred_path = archs_path / Path(model_name)
     
+    # check if download is required
     if not bbox_cache.subpath_exists(untarred_path):
         click.echo("Model checkpoint not found in cache. Downloading...")
         # download tar file
