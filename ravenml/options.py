@@ -19,10 +19,10 @@ def no_user_callback(ctx, param, value):
             if value is None:
                 ctx.exit('You must supply the --%s argument when using --no-user!'%arg)
 
-# NOTE: Any option intended to be used alongside the no_user_opt on a command
-# must have their is_eager flag set to TRUE for no_user_opt to work properly
 
 ### OPTIONS ###
+# NOTE: Any option intended to be used alongside the no_user_opt on a command
+# must have their is_eager flag set to TRUE for no_user_opt to work properly
 """Flag to determine if the command should run in user mode.
 """
 no_user_opt = click.option(

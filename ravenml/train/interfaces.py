@@ -16,8 +16,8 @@ class TrainInput(object):
     additional information.
 
     Args:
-        inquire: ask user for inputs or not
-        **kwargs: should be provided if inquire is set to False
+        inquire (bool, optional): ask user for inputs or not. Defaults to True
+        **kwargs (dict, optional): should be provided if inquire is set to False
             to populate TrainInput fields
 
     Attributes:

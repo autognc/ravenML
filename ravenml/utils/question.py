@@ -120,12 +120,24 @@ def user_confirms(message, default=False):
     return answer["value"]
     
 def cli_spinner(text, func, *args):
-    """ Halo spinner wrapper
+    """ Halo spinner wrapper.
+
+    Args:
+        text (str): text to display while spinner is running
+        func (function): function to execute while spinner runs
+        *args (tuple, optional): ordered arguments required by func
+        
+    Raises:
+        Automatically re-raises any exception raised by calling func after
+        succeeding the spinner with a "Failed" tail
     """
-    # spinner = Halo(text=text, text_color="magenta")
     spinner = Spinner(text=text, text_color="magenta")
     spinner.start()
-    result = func(*args)
-    spinner.succeed(text=spinner.text + 'Complete.')
+    try:
+        result = func(*args)
+    except Exception:
+        spinner.succeed(text=text + 'Failed.')
+        raise
+    spinner.succeed(text=text + 'Complete.')
     return result
     
