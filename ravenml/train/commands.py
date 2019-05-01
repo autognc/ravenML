@@ -12,7 +12,7 @@ from ravenml.train.interfaces import TrainInput, TrainOutput
 from ravenml.utils.dataset import get_dataset
 from ravenml.utils.question import cli_spinner
 from ravenml.options import no_user_opt
-    
+
 ### OPTIONS ###
 dataset_opt = click.option(
     '-d', '--dataset', 'dataset', type=str, is_eager=True,
@@ -42,13 +42,15 @@ def train(ctx: click.Context, local: str, dataset: str):
     """
     if ctx.obj['NO_USER']:
         # if no_user is true, make a TrainInput from the other flags
-        if local == 'None': 
-            local = None
-        ti = TrainInput(inquire=False, 
-                        dataset=cli_spinner('Retrieving dataset from s3...', get_dataset, dataset),
-                        artifact_path=local)
-        # assign to context for use in plugin
-        ctx.obj = ti
+        try:
+            dataset_obj = cli_spinner('Retrieving dataset from s3...', get_dataset, dataset)
+            if local == 'None': 
+                local = None
+            ti = TrainInput(inquire=False, dataset= dataset_obj, artifact_path=local)
+            # assign to context for use in plugin
+            ctx.obj = ti
+        except ValueError as e:
+            raise click.exceptions.BadParameter(dataset, ctx=ctx, param=dataset, param_hint='dataset name')
 
 @train.resultcallback()
 @click.pass_context

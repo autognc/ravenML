@@ -13,7 +13,7 @@ from shutil import copyfile
 from click.testing import CliRunner
 from ravenml.config.commands import show, update
 from ravenml.cli import clean
-from ravenml.utils.local_cache import global_cache
+from ravenml.utils.local_cache import global_cache, RAVENML_LOCAL_STORAGE_PATH
 from ravenml.utils.dataset import dataset_cache
 from ravenml.utils.config import get_config, update_config
 
