@@ -35,7 +35,7 @@ class Dataset(object):
         self._metadata = metadata
         self._path = path
         
-    def get_num_folds(self):
+    def get_num_folds(self) -> int:
         """Gets the number of folds this dataset supports for 
         k-fold cross validation.
 

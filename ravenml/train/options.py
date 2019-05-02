@@ -20,4 +20,8 @@ kfold_opt = click.option(
 
 
 ### PASS DECORATORS ###
+"""Click pass decorator for use in training plugin commands that expect
+to receive a TrainInput object. Ensures the creation of such an object
+if it is not found in the Context.
+"""
 pass_train = click.make_pass_decorator(TrainInput, ensure=True)

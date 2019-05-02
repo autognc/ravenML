@@ -5,15 +5,19 @@ Data Created:   03/18/2019
 Wrapper functions for prompting user input via questionary. Stolen from jigsaw.
 """
 
-from halo import Halo
-from questionary import prompt, Validator, ValidationError
 import sys
+from halo import Halo
+from questionary import prompt
+from typing import Union
 
-
-def in_test_mode():
-    if "pytest" in sys.modules:
-        return True
-    return False
+def in_test_mode() -> bool:
+    """ Determines if we are running in an automated test or not. 
+    This attribute is set via conftest.py in the ravenml/tests directory
+    
+    Returns:
+        bool: true if in test mode, false otherwise
+    """
+    return hasattr(sys, "_called_from_test")
 
 class Spinner:
     """Wrapper class to prevent bugs with Halo in pytest (see Issue #97)
@@ -35,7 +39,7 @@ class Spinner:
             return
         self._spinner.succeed(text=text)
 
-def user_input(message, default="", validator=None):
+def user_input(message: str, default="", validator=None) -> str:
     """Prompts the user for input
     
     Args:
@@ -70,7 +74,7 @@ def user_input(message, default="", validator=None):
     answer = prompt(question)
     return answer["value"]
 
-def user_selects(message, choices, selection_type="list", sort_choices=True):
+def user_selects(message: str, choices: list, selection_type="list", sort_choices=True) -> Union[str, list]:
     """Prompts the user to select a choice(s) given a message
     
     Args:
@@ -98,7 +102,7 @@ def user_selects(message, choices, selection_type="list", sort_choices=True):
     answer = prompt(question)
     return answer['value']
     
-def user_confirms(message, default=False):
+def user_confirms(message: str, default=False) -> bool:
     """Prompts the user to confirm an action by typing y/n
     
     Args:

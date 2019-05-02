@@ -7,30 +7,36 @@ Main CLI entry point for ravenml.
 
 import click
 from colorama import init, Fore
-from ravenml.utils.local_cache import global_cache
 from ravenml.train.commands import train
 from ravenml.data.commands import data
 from ravenml.config.commands import config
 from ravenml.utils.config import get_config, update_config
+from ravenml.utils.local_cache import global_cache
 
 init()
 
-## OPTIONS
+### OPTIONS ###
 clean_all_opt = click.option(
     '-a', '--all', is_flag=True,
     help='Clear all cache contents, including saved ravenML configuration.'
 )
 
-@click.group()
+
+### COMMANDS ###
+@click.group(help='Welcome to ravenML!')
 def cli():
     """ Top level command group for ravenml.
     """
     pass
     
-@cli.command()
+@cli.command(help='Cleans locally saved ravenML cache files.')
 @clean_all_opt
-def clean(all):
+def clean(all: bool):
     """ Cleans locally saved ravenml cache files.
+
+    Args:
+        all (bool): T/F whether to clean all files from cache, including
+            configuration YAML, default false
     """
     if all:
         if not global_cache.clean():

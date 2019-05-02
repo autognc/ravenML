@@ -7,7 +7,6 @@ Handles local file caching for ravenml.
 
 import os
 import shutil
-import click
 from pathlib import Path
 
 # local cache root path for ravenml application
@@ -27,7 +26,7 @@ class LocalCache(object):
     def __init__(self, path=RAVENML_LOCAL_STORAGE_PATH):
         self._path = path
 
-    def exists(self):
+    def exists(self) -> bool:
         """Checks if local storage cache exists on the machine.
         
         Returns:
@@ -41,7 +40,7 @@ class LocalCache(object):
         if not self.exists():
             self._create()
 
-    def subpath_exists(self, subpath: str):
+    def subpath_exists(self, subpath: str) -> bool:
         """Checks if a subpath within the local storage_cache exists.
         
         Args:
@@ -61,7 +60,7 @@ class LocalCache(object):
         if not self.subpath_exists(subpath):
             self._make_subpath(subpath)
 
-    def clean(self):
+    def clean(self) -> bool:
         """Cleans local storage cache.
         
         Returns:
@@ -88,7 +87,7 @@ class LocalCache(object):
         """
         os.makedirs(self.path)
 
-    def _make_subpath(self, subpath):
+    def _make_subpath(self, subpath: str):
         """Creates a subpath within the local storage cache.
 
         Not for external use (use ensure_subpath_exists() instead)
