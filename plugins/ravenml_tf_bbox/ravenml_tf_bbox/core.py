@@ -8,6 +8,7 @@ import io
 import sys
 import yaml
 import importlib
+import re
 from absl import flags
 from pathlib import Path
 from datetime import datetime
@@ -16,6 +17,9 @@ from ravenml.train.interfaces import TrainInput, TrainOutput
 from ravenml.data.interfaces import Dataset
 from ravenml.utils.question import user_selects, user_input
 from utils.utils import prepare_for_training, download_model_arch, bbox_cache
+
+# regex to ignore 0 indexed checkpoints
+checkpoint_regex = re.compile(r'model.ckpt-[1-9][0-9]*.[a-zA-Z0-9_-]+')
 
 @click.group(help='TensorFlow Object Detection with bounding boxes.')
 @click.pass_context
@@ -63,7 +67,7 @@ def train(ctx, train: TrainInput, kfold):
     model = models[model_name]
     model_type = model['type']
     model_url = model['url']
-    metadata['model'] = model_name
+    metadata['architecture'] = model_name
     
     # download model arch
     arch_path = download_model_arch(model_url)
@@ -105,10 +109,25 @@ def train(ctx, train: TrainInput, kfold):
     metadata['date_completed_at'] = datetime.utcnow().isoformat() + "Z"
     model_path = Path(base_dir) / Path('models') / Path('model') / Path('export') \
                     / Path ('exported_model')
+    model_path = model_path / os.listdir(model_path)[0] / 'saved_model.pb'        
+    
+    # get extra config files
+    extra_files = _get_checkpoints_and_config_paths(Path(base_dir))
 
-    model_path = Path(os.listdir(model_path)[0]) / Path('saved_model.pb')        
-    result = TrainOutput(metadata, Path(base_dir), model_path)
+    result = TrainOutput(metadata, Path(base_dir), model_path, extra_files)
     return result
+    
+def _get_checkpoints_and_config_paths(artifact_path: Path):
+    extras = []
+    # get checkpoints
+    extras_path = artifact_path / 'models' / 'model'
+    files = os.listdir(extras_path)
+    extras = [extras_path / f for f in files if checkpoint_regex.match(f)]
+    # append other files
+    extras.append(extras_path / 'pipeline.config')
+    extras.append(extras_path / 'graph.pbtxt')
+    return extras
+
     
 def _fill_basic_metadata(metadata: dict, dataset: Dataset):
     metadata['created_by'] = user_input('Please enter your first and last name:')

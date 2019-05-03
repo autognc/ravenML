@@ -11,7 +11,7 @@ from pathlib import Path
 from ravenml.utils.local_cache import global_cache
 
 # required configuration fields
-CONFIG_FIELDS = sorted(['dataset_bucket_name', 'artifact_bucket_name'])
+CONFIG_FIELDS = sorted(['dataset_bucket_name', 'model_bucket_name'])
 
 def get_config():
     """Retrieves the current configuration.

@@ -1,8 +1,37 @@
 import sys
 import os
 import boto3
-from pathlib import Path
+import json
 from tqdm import tqdm
+from pathlib import Path
+from ravenml.utils.config import get_config
+
+def upload_file_to_s3(prefix: str, file_path: Path, alternate_name=None):
+    """Uploads file at given file path to model bucket on S3.
+
+    Args:
+        prefix (str): prefix for filename on S3
+        file_path (Path): path to file
+        alternate_name (str, optional): name to override local file name
+    """
+    S3 = boto3.resource('s3')
+    config = get_config()
+    model_bucket = S3.Bucket(config['model_bucket_name'])
+    upload_path = prefix + '/' + file_path.name if alternate_name is None \
+                    else prefix + '/' + alternate_name
+    model_bucket.upload_file(str(file_path), upload_path)
+        
+def upload_dict_to_s3_as_json(s3_path: str, obj: dict):
+    """Uploads given dictionary to model bucket on S3.
+
+    Args:
+        s3_path (str): full s3 path to save dictionary to, (no .json)
+        obj (dict): dictionary to save
+    """
+    S3 = boto3.resource('s3')
+    config = get_config()
+    model_bucket = S3.Bucket(config['model_bucket_name'])   
+    model_bucket.put_object(Body=json.dumps(obj, indent=2), Key=s3_path)
 
 class Save(object):
     def __init__(self, upload_to_s3=True, 

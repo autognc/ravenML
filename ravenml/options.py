@@ -11,7 +11,8 @@ import click
 ### HELPERS/CALLBACKS ###
 def no_user_callback(ctx, param, value):
     # set in context
-    ctx.obj = {}
+    if ctx.obj is None:
+        ctx.obj = {}
     ctx.obj['NO_USER'] = value
     # if we are in no_user mode, check all required arguments are there
     if value:

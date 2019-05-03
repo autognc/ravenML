@@ -67,11 +67,11 @@ class TrainOutput(object):
         metadata (dict): metadata associated with training
         artifact_path (Path): path to root of training artifacts
     """
-    def __init__(self, metadata: dict, artifact_path: Path, model_path: Path):
+    def __init__(self, metadata: dict, artifact_path: Path, model_path: Path, extra_files: list):
         self._metadata = metadata
         self._artifact_path = artifact_path
         self._model_path = model_path
-        # self._extra_files = extras
+        self._extra_files = extra_files
         
     @property
     def metadata(self):
@@ -96,3 +96,11 @@ class TrainOutput(object):
     @model_path.setter
     def model_path(self, new_path):
         self._model_path = new_path
+
+    @property
+    def extra_files(self):
+        return self._extra_files
+    
+    @extra_files.setter
+    def extra_files(self, new_files):
+        self._extra_files = new_files

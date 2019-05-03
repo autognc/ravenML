@@ -22,9 +22,9 @@ dataset_bucket_name_opt = click.option(
     '-d', '--dataset-bucket', type=str, is_eager=True,
     help='Dataset bucket name.')
 
-artifact_bucket_name_opt = click.option(
-    '-a', '--artifact-bucket', type=str, is_eager=True,
-    help='Artifact destination bucket name.')
+model_bucket_name_opt = click.option(
+    '-a', '--model-bucket', type=str, is_eager=True,
+    help='Model artifact destination bucket name.')
 
 ### COMMANDS ###
 @click.group()
@@ -35,7 +35,8 @@ def config(ctx):
     Args:
         ctx (Context): click context object
     """
-    ctx.obj = False     # flag to indicate if entering update from show
+    ctx.obj = {}
+    ctx.obj['from_show'] = False     # flag to indicate if entering update from show
 
 @config.command()
 @click.pass_context
@@ -54,21 +55,23 @@ def show(ctx):
         # thrown when no configuration file is found
         click.echo(Fore.RED + 'No configuration found.')
         if user_confirms('Would you like to make a new configuration?', default=True):
-            ctx.obj = True
+            ctx.obj['from_show'] = True
+            ctx.obj['NO_USER'] = False
             ctx.invoke(update)
     except ValueError:
         # thrown when current configuration file is invalid
         click.echo(Fore.RED + 'Current configuration file is invalid.')
         if user_confirms('Would you like to fix it?', default=True):
-            ctx.obj = True
+            ctx.obj['from_show'] = True
+            ctx.obj['NO_USER'] = False
             ctx.invoke(update)
 
 @config.command()
 @click.pass_context
 @no_user_opt
 @dataset_bucket_name_opt
-@artifact_bucket_name_opt
-def update(ctx, artifact_bucket, dataset_bucket):
+@model_bucket_name_opt
+def update(ctx, model_bucket, dataset_bucket):
     """Update current config.
     
     Args:
@@ -81,12 +84,12 @@ def update(ctx, artifact_bucket, dataset_bucket):
     except FileNotFoundError:
         # thrown when no configuration file is found
         # checks to see if flag is set to indicate we arrived here from show
-        if not ctx.obj:
+        if not ctx.obj['from_show']:
             click.echo(Fore.RED + 'No configuration found to update. A new one will be created.')
     except ValueError:
         # thrown current configuration file is invalid
         # checks to see if flag is set to indicate we arrived here from show
-        if not ctx.obj:
+        if not ctx.obj['from_show']:
             click.echo(Fore.RED + 'Current configuration is invalid. A new one will be created.')
 
     # flag to indicate if config was successfully loaded or not
@@ -94,7 +97,7 @@ def update(ctx, artifact_bucket, dataset_bucket):
     
     # update configuration fields
     if ctx.obj['NO_USER']:
-        config['artifact_bucket_name'] = artifact_bucket
+        config['model_bucket_name'] = model_bucket
         config['dataset_bucket_name'] = dataset_bucket
     else:
         for field in CONFIG_FIELDS:
