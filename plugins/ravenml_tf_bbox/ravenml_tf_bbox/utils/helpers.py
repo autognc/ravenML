@@ -3,7 +3,7 @@ Author(s):      Nihal Dhamani (nihaldhamani@gmail.com),
                 Carson Schubert (carson.schubert14@gmail.com)
 Date Created:   04/10/2019
 
-Utility functions for the TF Bounding Box plugin.
+Helper functions for the TF Bounding Box plugin.
 """
 
 import os

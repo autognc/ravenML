@@ -21,9 +21,9 @@ from datetime import datetime
 from ravenml.train.options import kfold_opt, pass_train
 from ravenml.train.interfaces import TrainInput, TrainOutput
 from ravenml.data.interfaces import Dataset
-from ravenml.utils.question import user_selects
+from ravenml.utils.question import cli_spinner, user_selects
 from ravenml.utils.plugins import fill_basic_metadata
-from ravenml_tf_bbox.utils import prepare_for_training, download_model_arch, bbox_cache
+from ravenml_tf_bbox.utils.helpers import prepare_for_training, download_model_arch, bbox_cache
 
 # regex to ignore 0 indexed checkpoints
 checkpoint_regex = re.compile(r'model.ckpt-[1-9][0-9]*.[a-zA-Z0-9_-]+')
@@ -45,7 +45,7 @@ def train(ctx, train: TrainInput, kfold: bool):
     
     # NOTE: after training, you must create an instance of TrainOutput and return it
     # import necessary libraries
-    _import_od()
+    cli_spinner("Importing TensorFlow...", _import_od)
     tf.logging.set_verbosity(tf.logging.INFO)
     
     # create training metadata dict and populate with basic information
