@@ -12,7 +12,6 @@ bleach==3.1.0             # via nbconvert
 click==7.0
 contextlib2==0.5.5
 cycler==0.10.0            # via matplotlib
-cython==0.29.7
 decorator==4.4.0          # via ipython, traitlets
 defusedxml==0.6.0         # via nbconvert
 entrypoints==0.3          # via nbconvert
@@ -42,7 +41,7 @@ mock==3.0.4               # via tensorflow-estimator
 nbconvert==5.5.0          # via jupyter, notebook
 nbformat==4.4.0           # via ipywidgets, nbconvert, notebook
 notebook==5.7.8           # via jupyter, widgetsnbextension
-numpy==1.16.3
+numpy==1.16.3             # via h5py, keras-applications, keras-preprocessing, matplotlib, tensorboard, tensorflow, tensorflow-estimator
 pandocfilters==1.4.2      # via nbconvert
 parso==0.4.0              # via jedi
 pexpect==4.7.0            # via ipython
