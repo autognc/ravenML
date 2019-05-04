@@ -82,7 +82,7 @@ def _upload_result(result: TrainOutput):
     """
     shortuuid.set_alphabet('23456789abcdefghijkmnopqrstuvwxyz')
     uuid = shortuuid.uuid()
-    model_name = f'{result.metadata['architecture']}_{uuid}.pb'
+    model_name = f'{result.metadata["architecture"]}_{uuid}.pb'
     upload_file_to_s3('models', result.model_path, alternate_name=model_name)
     upload_dict_to_s3_as_json(f'models/metadata_{uuid}', result.metadata)
     if result.extra_files != []:

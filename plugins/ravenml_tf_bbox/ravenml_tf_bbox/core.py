@@ -1,3 +1,10 @@
+"""
+Author(s):      Nihal Dhamani (nihaldhamani@gmail.com), 
+                Carson Schubert (carson.schubert14@gmail.com)
+Date Created:   04/10/2019
+
+Core command group and commands for TF Bounding Box plugin.
+"""
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -9,14 +16,14 @@ import sys
 import yaml
 import importlib
 import re
-from absl import flags
 from pathlib import Path
 from datetime import datetime
 from ravenml.train.options import kfold_opt, pass_train
 from ravenml.train.interfaces import TrainInput, TrainOutput
 from ravenml.data.interfaces import Dataset
-from ravenml.utils.question import user_selects, user_input
-from utils.utils import prepare_for_training, download_model_arch, bbox_cache
+from ravenml.utils.question import user_selects
+from ravenml.utils.plugins import fill_basic_metadata
+from ravenml_tf_bbox.utils import prepare_for_training, download_model_arch, bbox_cache
 
 # regex to ignore 0 indexed checkpoints
 checkpoint_regex = re.compile(r'model.ckpt-[1-9][0-9]*.[a-zA-Z0-9_-]+')
@@ -26,11 +33,11 @@ checkpoint_regex = re.compile(r'model.ckpt-[1-9][0-9]*.[a-zA-Z0-9_-]+')
 def tf_bbox(ctx):
     pass
     
-@tf_bbox.command()
+@tf_bbox.command(help='Train a model.')
 @kfold_opt
 @pass_train
 @click.pass_context
-def train(ctx, train: TrainInput, kfold):
+def train(ctx, train: TrainInput, kfold: bool):
     # If the context has a TrainInput already, it is passed as "train"
     # If it does not, the constructor is called AUTOMATICALLY
     # by Click because the @pass_train decorator is set to ensure
@@ -41,19 +48,15 @@ def train(ctx, train: TrainInput, kfold):
     _import_od()
     tf.logging.set_verbosity(tf.logging.INFO)
     
-    # create training metadata dict
+    # create training metadata dict and populate with basic information
     metadata = {}
-    _fill_basic_metadata(metadata, train.dataset)
-
-    data_path = str(train.dataset.path)
+    fill_basic_metadata(metadata, train.dataset)
 
     # set base directory for model artifacts 
-    if train.artifact_path is None:
-        base_dir = str(bbox_cache.path / Path('temp'))
-    else:
-        base_dir = str(train.artifact_path)
-
-    # load model choices
+    base_dir = bbox_cache.path / 'temp' if train.artifact_path is None \
+                    else train.artifact_path
+ 
+    # load model choices from YAML
     models = {}
     models_path = os.path.dirname(__file__) / Path('utils') / Path('model_info.yml')
     with open(models_path, 'r') as stream:
@@ -64,6 +67,7 @@ def train(ctx, train: TrainInput, kfold):
     
     # prompt for model selection
     model_name = user_selects('Choose model', models.keys())
+    # grab fields and add to metadata
     model = models[model_name]
     model_type = model['type']
     model_url = model['url']
@@ -73,10 +77,11 @@ def train(ctx, train: TrainInput, kfold):
     arch_path = download_model_arch(model_url)
 
     # prepare directory for training/prompt for hyperparams
-    if not prepare_for_training(data_path, base_dir, arch_path, model_type, metadata):
+    if not prepare_for_training(base_dir, train.dataset.path, arch_path, model_type, metadata):
         ctx.exit('Training cancelled.')
     
     model_dir = os.path.join(base_dir, 'models/model')
+    # model_dir = base_dir
     pipeline_config_path = os.path.join(base_dir, 'models/model/pipeline.config')
 
     config = tf.estimator.RunConfig(model_dir=model_dir)
@@ -118,6 +123,15 @@ def train(ctx, train: TrainInput, kfold):
     return result
     
 def _get_checkpoints_and_config_paths(artifact_path: Path):
+    """Returns the filepaths for all checkpoint, config, and pbtxt (label)
+    files in the artifact directory.
+
+    Args:
+        artifact_path (Path): path to training artifacts
+    
+    Returns:
+        list: list of Paths that point to files
+    """
     extras = []
     # get checkpoints
     extras_path = artifact_path / 'models' / 'model'
@@ -127,13 +141,6 @@ def _get_checkpoints_and_config_paths(artifact_path: Path):
     extras.append(extras_path / 'pipeline.config')
     extras.append(extras_path / 'graph.pbtxt')
     return extras
-
-    
-def _fill_basic_metadata(metadata: dict, dataset: Dataset):
-    metadata['created_by'] = user_input('Please enter your first and last name:')
-    metadata['comments'] = user_input('Please enter any comments about this training:')
-    metadata['date_started_at'] = datetime.utcnow().isoformat() + "Z"
-    metadata['dataset_used'] = dataset.metadata
 
 # stdout redirection found at https://codingdose.info/2018/03/22/supress-print-output-in-python/
 def _import_od():
@@ -161,6 +168,8 @@ def _import_od():
     sys.stdout = sys.__stdout__
     
 # this function is derived from https://stackoverflow.com/a/46878490
+# NOTE: this function should be used in all plugins, but the function is NOT
+# importable because of the use of globals(). You must copy the code.
 def _dynamic_import(modulename, shortname = None, asfunction = False):
     """ Function to dynamically import python modules into the global scope.
 
