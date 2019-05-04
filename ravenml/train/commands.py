@@ -72,10 +72,11 @@ def process_result(ctx: click.Context, result: TrainOutput, local: str, dataset:
 
     # need to consider issues with this being called on every call to train
     if ctx.invoked_subcommand != 'list' and result is not None:
-        print(json.dumps(result.metadata, indent=2))
-        click.echo(result.artifact_path)
-        click.echo(result.model_path)
-        cli_spinner('Uploading artifacts...', _upload_result, result)
+        # print(json.dumps(result.metadata, indent=2))
+        # click.echo(result.artifact_path)
+        # click.echo(result.model_path)
+        uuid = cli_spinner('Uploading artifacts...', _upload_result, result)
+        click.echo(f'Artifact UUID: {uuid}')
     return result
 
 @train.command()
@@ -84,7 +85,9 @@ def list():
     """
     for entry in iter_entry_points(group='ravenml.plugins.train', name=None):
         click.echo(entry.name)
+        
 
+### HELPERS ###
 def _upload_result(result: TrainOutput):
     """ Wraps upload procure into single function for use with cli_spinner.
 
@@ -92,6 +95,9 @@ def _upload_result(result: TrainOutput):
 
     Args:
         result (TrainOutput): TrainOutput object to be uploaded
+    
+    Returns:
+        str: uuid assigned to result on upload
     """
     shortuuid.set_alphabet('23456789abcdefghijkmnopqrstuvwxyz')
     uuid = shortuuid.uuid()
@@ -101,6 +107,7 @@ def _upload_result(result: TrainOutput):
     if result.extra_files != []:
         for fp in result.extra_files:
             upload_file_to_s3(f'extras/{uuid}', fp)
+    return uuid
 
 # @train.command()
 # def testup():

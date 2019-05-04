@@ -18,10 +18,11 @@ import importlib
 import re
 from pathlib import Path
 from datetime import datetime
+from ravenml.options import verbose_opt
 from ravenml.train.options import kfold_opt, pass_train
 from ravenml.train.interfaces import TrainInput, TrainOutput
 from ravenml.data.interfaces import Dataset
-from ravenml.utils.question import cli_spinner, user_selects
+from ravenml.utils.question import cli_spinner, Spinner, user_selects 
 from ravenml.utils.plugins import fill_basic_metadata
 from ravenml_tf_bbox.utils.helpers import prepare_for_training, download_model_arch, bbox_cache
 
@@ -34,10 +35,11 @@ def tf_bbox(ctx):
     pass
     
 @tf_bbox.command(help='Train a model.')
+@verbose_opt
 @kfold_opt
 @pass_train
 @click.pass_context
-def train(ctx, train: TrainInput, kfold: bool):
+def train(ctx, train: TrainInput, kfold: bool, verbose: bool):
     # If the context has a TrainInput already, it is passed as "train"
     # If it does not, the constructor is called AUTOMATICALLY
     # by Click because the @pass_train decorator is set to ensure
@@ -46,7 +48,10 @@ def train(ctx, train: TrainInput, kfold: bool):
     # NOTE: after training, you must create an instance of TrainOutput and return it
     # import necessary libraries
     cli_spinner("Importing TensorFlow...", _import_od)
-    tf.logging.set_verbosity(tf.logging.INFO)
+    if verbose:
+        tf.logging.set_verbosity(tf.logging.INFO)
+    else:
+        tf.logging.set_verbosity(tf.logging.FATAL)
     
     # create training metadata dict and populate with basic information
     metadata = {}
@@ -108,7 +113,12 @@ def train(ctx, train: TrainInput, kfold: bool):
         eval_on_train_data=False)
 
     # actually train
+    progress = Spinner('Training model...', 'magenta')
+    if not verbose:
+        progress.start()
     tf.estimator.train_and_evaluate(estimator, train_spec, eval_specs[0])
+    if not verbose:
+        progress.succeed('Training model...Complete.')
     
     # final metadata and return of TrainOutput object
     metadata['date_completed_at'] = datetime.utcnow().isoformat() + "Z"

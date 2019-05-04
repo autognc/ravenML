@@ -31,6 +31,8 @@ done
 
 if [ $install -eq 1 ]; then
     echo "Installing..."
+    # pycocotools requires two libraries be installed PRIOR to running its setup.py
+    pip install numpy cython
     pip-compile --output-file $requirements_prefix.txt $requirements_prefix.in
     pip install -r $requirements_prefix.txt
     pip install -e .

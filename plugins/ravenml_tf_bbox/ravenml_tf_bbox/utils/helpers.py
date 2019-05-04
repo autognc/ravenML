@@ -19,9 +19,26 @@ from ravenml.utils.question import user_confirms, user_input, user_selects
 
 init()
 
+# local cache for the tf_bbox plugin (within ravenML cache)
 bbox_cache = LocalCache(global_cache.path / 'tf-bbox')
 
 def prepare_for_training(base_dir: Path, data_path: Path, arch_path: Path, model_type: str, metadata: dict):
+    """ Prepares the system for training.
+
+    Creates artifact directory structure. Prompts user for choice of optimizer and
+    hyperparameters. Injects hyperparameters into config files. Adds hyperparameters
+    to given metadata dictionary.
+
+    Args:
+        base_dir (Path): root of training directory
+        data_path (Path): path to dataset
+        arch_path (Path): path to model architecture directory
+        model_type (str): name of model type (i.e, ssd_inception_v1)
+        metadata (dict): metadata dictionary to add fields to
+
+    Returns:
+        bool: True if successful, False otherwise
+    """
     # hyperparameter metadata dictionary
     hp_metadata = {}
     
@@ -32,16 +49,13 @@ def prepare_for_training(base_dir: Path, data_path: Path, arch_path: Path, model
         else:
             return False
     os.makedirs(base_dir)
-    # click.echo('Created artifact folder.')
     
     # create a data folder within our base_directory
     os.makedirs(base_dir / 'data')
-    # click.echo('Created data folder.')
 
     # copy object-detection.pbtxt from dataset and move into training data folder
     pbtxt_file = data_path / 'label_map.pbtxt'
     shutil.copy(pbtxt_file, base_dir / 'data')
-    # click.echo('Placed label_map.pbtxt file inside data folder.')
 
     # create models, model, eval, and train folders
     model_folder = base_dir / 'models' / 'model'
@@ -52,7 +66,6 @@ def prepare_for_training(base_dir: Path, data_path: Path, arch_path: Path, model
     os.makedirs(model_folder)
     os.makedirs(eval_folder)
     os.makedirs(train_folder)
-    click.echo('Created models, model, train, eval folders')
     
     # load optimizer choices and prompt for selection
     defaults = {}
@@ -99,7 +112,6 @@ def prepare_for_training(base_dir: Path, data_path: Path, arch_path: Path, model
     # output final configuation file for training
     with open(model_folder / 'pipeline.config', 'w') as file:
         file.write(pipeline_contents)
-    click.echo('Created pipeline.config file inside models/model/.')
     
     # place TF record files into training directory
     # TODO: change to move all sharded chunks
@@ -107,7 +119,6 @@ def prepare_for_training(base_dir: Path, data_path: Path, arch_path: Path, model
     test_record = data_path / 'dev/standard/tf/test.record-00000-of-00001'
     shutil.copy(train_record, base_dir / 'data')
     shutil.copy(test_record, base_dir / 'data')
-    click.echo("Copied records to data directory.")
 
     # copy model checkpoints to our train folder
     checkpoint_folder = arch_path
@@ -132,7 +143,6 @@ def prepare_for_training(base_dir: Path, data_path: Path, arch_path: Path, model
     checkpoint_contents = checkpoint_contents.replace('<replace>', str(train_folder))
     with open(train_folder / 'checkpoint', 'w') as new_cf:
         new_cf.write(checkpoint_contents)
-    click.echo('Added model checkpoints to models/model/train folder.')
     
     # update metadata and return success
     metadata['hyperparemeters'] = hp_metadata

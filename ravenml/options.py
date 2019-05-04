@@ -39,5 +39,10 @@ no_user_opt = click.option(
     help='Disable Inquirer prompts and use flags instead.'
 )
 
+verbose_opt = click.option(
+    '-v', '--verbose', is_flag=True,
+    help='Run command in verbose mode.'
+)
+
 
 ### PASS DECORATORS ###
