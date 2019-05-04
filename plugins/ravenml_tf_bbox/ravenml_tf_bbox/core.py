@@ -29,6 +29,7 @@ from ravenml_tf_bbox.utils.helpers import prepare_for_training, download_model_a
 # regex to ignore 0 indexed checkpoints
 checkpoint_regex = re.compile(r'model.ckpt-[1-9][0-9]*.[a-zA-Z0-9_-]+')
 
+### COMMANDS ###
 @click.group(help='TensorFlow Object Detection with bounding boxes.')
 @click.pass_context
 def tf_bbox(ctx):
@@ -122,16 +123,17 @@ def train(ctx, train: TrainInput, kfold: bool, verbose: bool):
     
     # final metadata and return of TrainOutput object
     metadata['date_completed_at'] = datetime.utcnow().isoformat() + "Z"
-    model_path = Path(base_dir) / Path('models') / Path('model') / Path('export') \
-                    / Path ('exported_model')
+    model_path = base_dir / 'models' / 'model' / 'export' / 'exported_model'
     model_path = model_path / os.listdir(model_path)[0] / 'saved_model.pb'        
     
     # get extra config files
-    extra_files = _get_checkpoints_and_config_paths(Path(base_dir))
+    extra_files = _get_checkpoints_and_config_paths(base_dir)
 
-    result = TrainOutput(metadata, Path(base_dir), model_path, extra_files)
+    result = TrainOutput(metadata, base_dir, model_path, extra_files)
     return result
     
+
+### HELPERS ###
 def _get_checkpoints_and_config_paths(artifact_path: Path):
     """Returns the filepaths for all checkpoint, config, and pbtxt (label)
     files in the artifact directory.

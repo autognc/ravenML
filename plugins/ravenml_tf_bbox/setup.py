@@ -9,17 +9,6 @@ setup(
     version='0.1',
     description='Training plugin for ravenml',
     packages=['ravenml_tf_bbox'],
-    # install_requires=[
-    #     'Click',
-    #     'absl-py',
-    #     'cython',
-    #     'pycocotools',
-    #     'matplotlib',
-    #     'contextlib2',
-    #     'pillow',
-    #     'lxml',
-    #     'jupyter'
-    # ],
     install_requires=dependencies('requirements.in'),
     entry_points='''
         [ravenml.plugins.train]
