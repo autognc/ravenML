@@ -13,8 +13,11 @@ from ravenml.utils.local_cache import global_cache
 # required configuration fields
 CONFIG_FIELDS = sorted(['dataset_bucket_name', 'model_bucket_name'])
 
-def get_config():
+def get_config() -> dict:
     """Retrieves the current configuration.
+    
+    Returns:
+        dict: current configuration
 
     Raises:
         ValueError: If a required field is missing or an invalid field is found.

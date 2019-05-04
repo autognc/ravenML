@@ -5,9 +5,7 @@ Date Created:   03/03/2019
 Contains the classes for interfacing with training command group.
 """
 
-import os
 from pathlib import Path
-from halo import Halo
 from ravenml.utils.question import cli_spinner, user_input, user_selects, user_confirms
 from ravenml.utils.dataset import get_dataset_names, get_dataset
 from ravenml.data.interfaces import Dataset
@@ -18,8 +16,8 @@ class TrainInput(object):
     additional information.
 
     Args:
-        inquire: ask user for inputs or not
-        **kwargs: should be provided if inquire is set to False
+        inquire (bool, optional): ask user for inputs or not. Defaults to True
+        **kwargs (dict, optional): should be provided if inquire is set to False
             to populate TrainInput fields
 
     Attributes:
@@ -53,7 +51,7 @@ class TrainInput(object):
         return self._artifact_path
         
     @artifact_path.setter
-    def artifact_path(self, new_path):
+    def artifact_path(self, new_path: str):
         self._artifact_path = new_path
 
 class TrainOutput(object):
