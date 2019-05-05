@@ -145,7 +145,7 @@ def prepare_for_training(base_dir: Path, data_path: Path, arch_path: Path, model
         new_cf.write(checkpoint_contents)
     
     # update metadata and return success
-    metadata['hyperparemeters'] = hp_metadata
+    metadata['hyperparameters'] = hp_metadata
     return True
 
 def download_model_arch(model_name):

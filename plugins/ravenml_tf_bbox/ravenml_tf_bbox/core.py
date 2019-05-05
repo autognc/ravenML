@@ -86,6 +86,13 @@ def train(ctx, train: TrainInput, kfold: bool, verbose: bool):
     if not prepare_for_training(base_dir, train.dataset.path, arch_path, model_type, metadata):
         ctx.exit('Training cancelled.')
     
+    # get number of training steps
+    num_train_steps = metadata['hyperparameters']['train_steps']
+    try:
+        num_train_steps = int(num_train_steps)
+    except Exception as e:
+        raise e
+
     model_dir = os.path.join(base_dir, 'models/model')
     # model_dir = base_dir
     pipeline_config_path = os.path.join(base_dir, 'models/model/pipeline.config')
@@ -95,7 +102,7 @@ def train(ctx, train: TrainInput, kfold: bool, verbose: bool):
         run_config=config,
         hparams=model_hparams.create_hparams(None),
         pipeline_config_path=pipeline_config_path,
-        train_steps=100)
+        train_steps=num_train_steps)
     
     estimator = train_and_eval_dict['estimator']
     train_input_fn = train_and_eval_dict['train_input_fn']
