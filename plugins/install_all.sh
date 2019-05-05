@@ -31,8 +31,9 @@ set -o nounset      # Treat unset variables and parameters other than the specia
 # determine if we are installing or uninstalling
 install_flag=d
 gpu_flag=d
+ec2_flag=d
 requirements_prefix="requirements"
-while getopts "ug" opt; do
+while getopts "ugc" opt; do
     case "$opt" in
         u)
             install_flag=u
@@ -40,6 +41,10 @@ while getopts "ug" opt; do
         g)
             gpu_flag=g
             requirements_prefix="requirements-gpu"
+        c)
+            ec2_flag=c
+            ;;
+
      esac
 done
 
@@ -56,7 +61,11 @@ for f in * ; do
     fi
 done
 
-# ensure raven core environment dependencies are still met
-echo "Checking raven core dependencies..."
-cd ..
-conda env update -f environment.yml
+
+
+if [ "$ec2_flag" = "d" ]; then
+    # ensure raven core environment dependencies are still met
+    echo "Checking raven core dependencies..."
+    cd ..
+    conda env update -f environment.yml
+fi
