@@ -31,7 +31,7 @@ def upload_dict_to_s3_as_json(s3_path: str, obj: dict):
     S3 = boto3.resource('s3')
     config = get_config()
     model_bucket = S3.Bucket(config['model_bucket_name'])   
-    model_bucket.put_object(Body=json.dumps(obj, indent=2), Key=s3_path)
+    model_bucket.put_object(Body=json.dumps(obj, indent=2), Key=s3_path+'.json')
 
 class Save(object):
     def __init__(self, upload_to_s3=True, 
