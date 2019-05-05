@@ -35,16 +35,15 @@ ec2_flag=d
 requirements_prefix="requirements"
 while getopts "ugc" opt; do
     case "$opt" in
+        c)
+            ec2_flag=c
+            ;;
         u)
             install_flag=u
             ;;
         g)
             gpu_flag=g
             requirements_prefix="requirements-gpu"
-        c)
-            ec2_flag=c
-            ;;
-
      esac
 done
 

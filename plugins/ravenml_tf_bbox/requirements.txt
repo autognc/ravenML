@@ -5,6 +5,7 @@
 #    pip-compile --output-file requirements.txt requirements.in
 #
 absl-py==0.7.1
+appnope==0.1.0            # via ipython
 astor==0.7.1              # via tensorflow
 attrs==19.1.0             # via jsonschema
 backcall==0.1.0           # via ipython
