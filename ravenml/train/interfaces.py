@@ -4,7 +4,7 @@ Date Created:   03/03/2019
 
 Contains the classes for interfacing with training command group.
 """
-
+import os
 from pathlib import Path
 from ravenml.utils.question import cli_spinner, user_input, user_selects, user_confirms
 from ravenml.utils.dataset import get_dataset_names, get_dataset
@@ -26,14 +26,14 @@ class TrainInput(object):
     """
     def __init__(self, inquire=True, **kwargs):
         if inquire:
-            self._artifact_path = os.path.expanduser(user_input('Enter filepath for artifacts:')) if \
+            self._artifact_path = Path(os.path.expanduser(user_input('Enter filepath for artifacts:'))) if \
                                     user_confirms('Run in local mode?') else None
             dataset_options = cli_spinner('Finding datasets on S3', get_dataset_names)
             dataset = user_selects('Choose dataset:', dataset_options)
             self._dataset = cli_spinner(f'Downloading {dataset} from S3...', get_dataset, dataset)
         else:
             self._dataset = kwargs.get('dataset')
-            self._artifact_path = kwargs.get('artifact_path')
+            self._artifact_path = Path(kwargs.get('artifact_path'))
     
     def local_mode(self):
         return self.artifact_path is not None
