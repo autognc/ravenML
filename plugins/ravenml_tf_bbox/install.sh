@@ -31,6 +31,27 @@ done
 
 if [ $install -eq 1 ]; then
     echo "Installing..."
+    
+    # install protoc on system if necessary
+    if [ $(which protoc) ]; then
+        if [ $(uname) == 'Linux' ]; then
+            PROTOC_ZIP=protoc-3.7.1-linux-x86_64.zip
+            curl -OL https://github.com/google/protobuf/releases/download/v3.7.1/$PROTOC_ZIP
+            sudo unzip -o $PROTOC_ZIP -d /usr/local bin/protoc
+            sudo unzip -o $PROTOC_ZIP -d /usr/local include/*
+            rm -f $PROTOC_ZIP 
+        elif [ $(uname) == 'Darwin' ]; then
+            PROTOC_ZIP=protoc-3.7.1-osx-x86_64.zip
+            curl -OL https://github.com/google/protobuf/releases/download/v3.7.1/$PROTOC_ZIP
+            sudo unzip -o $PROTOC_ZIP -d /usr/local bin/protoc
+            sudo unzip -o $PROTOC_ZIP -d /usr/local include/*
+            rm -f $PROTOC_ZIP
+        else
+            echo 'Your system is not supported! Only Linux and macOS (Darwin) are supported.'
+            exit 1
+        fi
+    fi
+
     # pycocotools requires two libraries be installed PRIOR to running its setup.py
     pip install numpy cython
     pip-compile --output-file $requirements_prefix.txt $requirements_prefix.in
@@ -44,8 +65,3 @@ else
 fi
 
 
-# PROTOC_ZIP=protoc-3.7.1-osx-x86_64.zip
-# curl -OL https://github.com/google/protobuf/releases/download/v3.7.1/$PROTOC_ZIP
-# sudo unzip -o $PROTOC_ZIP -d /usr/local bin/protoc
-# sudo unzip -o $PROTOC_ZIP -d /usr/local include/*
-# rm -f $PROTOC_ZIP
