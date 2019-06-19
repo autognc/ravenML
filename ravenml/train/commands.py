@@ -89,7 +89,7 @@ def list():
 
 ### HELPERS ###
 def _upload_result(result: TrainOutput):
-    """ Wraps upload procure into single function for use with cli_spinner.
+    """ Wraps upload procedure into single function for use with cli_spinner.
 
     Generates a UUID for the model and uploads all artifacts.
 
