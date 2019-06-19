@@ -110,4 +110,7 @@ venv.bak/
 # compiled protos
 *pb2.py
 
+# downloaded zip file
+*.zip
+
 
