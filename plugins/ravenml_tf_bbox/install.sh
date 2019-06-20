@@ -33,7 +33,7 @@ if [ $install -eq 1 ]; then
     echo "Installing..."
     
     # install protoc on system if necessary
-    if [ $(which protoc) ]; then
+    if [ ! $(which protoc) ]; then
         if [ $(uname) == 'Linux' ]; then
             PROTOC_ZIP=protoc-3.7.1-linux-x86_64.zip
             curl -OL https://github.com/google/protobuf/releases/download/v3.7.1/$PROTOC_ZIP
