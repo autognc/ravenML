@@ -75,8 +75,11 @@ def process_result(ctx: click.Context, result: TrainOutput, local: str, dataset:
         # print(json.dumps(result.metadata, indent=2))
         # click.echo(result.artifact_path)
         # click.echo(result.model_path)
-        uuid = cli_spinner('Uploading artifacts...', _upload_result, result)
-        click.echo(f'Artifact UUID: {uuid}')
+        if not result.local_mode:
+            uuid = cli_spinner('Uploading artifacts...', _upload_result, result)
+            click.echo(f'Artifact UUID: {uuid}')
+        else:
+            click.echo(f'LOCAL MODE: Not uploading model to S3. Model is located at: {result.artifact_path}')
     return result
 
 @train.command()
