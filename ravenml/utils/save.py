@@ -83,7 +83,6 @@ def upload_dict_to_s3_as_json(s3_path: str, obj: dict):
 #         This function upload model artifcats (the checkpoint files and .pb) to the specified directory. There is also a progress bar updating the user on the status of each file.
 
 #         Args:
-#             None
         
 #         Returns:
 #             None
