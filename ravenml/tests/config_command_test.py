@@ -12,8 +12,10 @@ from pathlib import Path
 from shutil import copyfile
 from click.testing import CliRunner
 from ravenml.config.commands import show, update
-from ravenml.utils.local_cache import global_cache
+from ravenml.cli import clean
+from ravenml.utils.local_cache import global_cache, RAVENML_LOCAL_STORAGE_PATH
 from ravenml.utils.dataset import dataset_cache
+from ravenml.utils.config import get_config, update_config
 
 ### SETUP ###
 runner = CliRunner()
@@ -38,6 +40,9 @@ def teardown_module():
     global_cache.clean()
     
 
+# NOTE: there are no automated tests for prompt behavior of commands, as prompt-toolkit
+# does not deal nicley with stdin not being an actual terminal (as pytest does it)
+
 ### TESTS ###
 def test_show():
     """ Tests the show subcommand.
@@ -49,6 +54,28 @@ def test_show():
     sub = ansi_escape.sub('', result.output)
     assert sub == data
 
-# def test_update():
-#     result = runner.invoke(update, input='\r\r')
-#     assert result.exit_code == 0
+def test_update():
+    """Tests the update subcommand in no user mode.
+    """
+    result = runner.invoke(update, ['--no-user', '-d', 'test_data_buck', '-a', 'test_art_buck'])
+    assert result.exit_code == 0
+    with open(test_data_dir / Path('config_update_contents.txt'), 'r') as myfile:
+        data = myfile.read()
+    with open(global_cache.path / Path('config.yml'), 'r') as myfile:
+        config_contents = myfile.read()
+    assert config_contents == data
+    
+def test_update_no_config():
+    """Basically the same as test_update, except we clean the existing configuration
+    file away before calling it. Ensures the command properly deals with this scanario.
+    """
+    config = get_config()
+    global_cache.clean()
+    result = runner.invoke(update, ['--no-user', '-d', 'test_data_buck', '-a', 'test_art_buck'])
+    assert result.exit_code == 0
+    with open(test_data_dir / Path('config_update_contents.txt'), 'r') as myfile:
+        data = myfile.read()
+    with open(global_cache.path / Path('config.yml'), 'r') as myfile:
+        config_contents = myfile.read()
+    assert config_contents == data
+    update_config(config)

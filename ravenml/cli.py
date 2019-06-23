@@ -6,22 +6,52 @@ Main CLI entry point for ravenml.
 """
 
 import click
-from ravenml.utils.local_cache import global_cache
+from colorama import init, Fore
 from ravenml.train.commands import train
 from ravenml.data.commands import data
 from ravenml.config.commands import config
+from ravenml.utils.config import get_config, update_config
+from ravenml.utils.local_cache import global_cache
 
-@click.group()
+init()
+
+### OPTIONS ###
+clean_all_opt = click.option(
+    '-a', '--all', is_flag=True,
+    help='Clear all cache contents, including saved ravenML configuration.'
+)
+
+
+### COMMANDS ###
+@click.group(help='Welcome to ravenML!')
 def cli():
     """ Top level command group for ravenml.
     """
     pass
     
-@cli.command()
-def clean():
+@cli.command(help='Cleans locally saved ravenML cache files.')
+@clean_all_opt
+def clean(all: bool):
     """ Cleans locally saved ravenml cache files.
+
+    Args:
+        all (bool): T/F whether to clean all files from cache, including
+            configuration YAML, default false
     """
-    global_cache.clean() 
+    if all:
+        if not global_cache.clean():
+            click.echo(Fore.RED + 'No cache to clean.')
+    else:
+        try:
+            config = get_config()
+            global_cache.clean()
+            update_config(config)
+        except ValueError:
+            click.echo(Fore.RED + 'Bad configuration file. Deleting alongside cache.') 
+            global_cache.clean()
+        except FileNotFoundError:
+            if not global_cache.clean():
+                click.echo(Fore.RED + 'No cache to clean.')
 
 cli.add_command(train)
 cli.add_command(data)

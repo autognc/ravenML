@@ -1,14 +1,21 @@
+# pip-tools is required only for ravenML-plugins, but included here
+# for simplicity
+
+# moto and pytest are simply for automated testing
+
 name: ravenml
 channels:
     - defaults
 dependencies:
   - python=3.6.8
+  - colorama
   - pip:
     - click==7.0
     - click-plugins==1.0.4
     - questionary==1.0.2
-    - tqdm==4.31.1
     - boto3==1.9.86
+    - shortuuid==0.5.0
+    - halo==0.0.26
     - pip-tools
     - moto==1.3.7
     - pytest==4.3.0

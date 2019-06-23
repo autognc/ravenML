@@ -7,8 +7,11 @@ Utility module for managing Jigsaw created datasets.
 
 import os
 import json
-from pathlib import Path
+
 import boto3
+from botocore.exceptions import ClientError
+from pathlib import Path
+
 from ravenml.utils.local_cache import LocalCache, global_cache
 from ravenml.data.interfaces import Dataset
 from ravenml.utils.config import get_config
@@ -17,7 +20,7 @@ from ravenml.utils.config import get_config
 dataset_cache = LocalCache(path=global_cache.path / Path('datasets'))
 
 ### PUBLIC METHODS ###
-def get_dataset_names():
+def get_dataset_names() -> list:
     """Retrieves the names of all available datasets.
 
     Returns:
@@ -32,7 +35,7 @@ def get_dataset_names():
             dataset_names.append(obj.get('Prefix')[:-1])
     return dataset_names
 
-def get_dataset_metadata(name: str, no_check=False):
+def get_dataset_metadata(name: str, no_check=False) -> dict:
     """Retrieves dataset metadata. Downloads from S3 if necessary.
 
     Args:
@@ -41,12 +44,18 @@ def get_dataset_metadata(name: str, no_check=False):
 
     Returns:
         dict: dataset metadata
+        
+    Raises:
+        ValueError: if given dataset name is invalid
     """
     if not no_check:
-        _ensure_metadata(name)
+        try:
+            _ensure_metadata(name)
+        except ClientError as e:
+            raise ValueError(name) from e
     return json.load(open(dataset_cache.path / Path(name) / 'metadata.json'))
 
-def get_dataset(name: str):
+def get_dataset(name: str) -> Dataset:
     """Retrives a dataset. Downloads from S3 if necessary.
 
     Args:
@@ -54,9 +63,15 @@ def get_dataset(name: str):
     
     Returns:
         Dataset: dataset itself
+        
+    Raises:
+        ValueError: if dataset name is invalid (re raised)
     """
-    _ensure_dataset(name)
-    return Dataset(name, get_dataset_metadata(name, no_check=True))
+    try:
+        _ensure_dataset(name)
+        return Dataset(name, get_dataset_metadata(name, no_check=True), dataset_cache.path / Path(name))
+    except ValueError:
+        raise
  
 
 ### PRIVATE HELPERS ###
@@ -81,13 +96,24 @@ def _ensure_dataset(name: str):
 
     Args:
         name (str): name of dataset
+        
+    Raises:
+        ValueError: if dataset name is invalid (no matching objects in S3 bucket)
     """
     S3 = boto3.resource('s3')
     config = get_config()
     DATASET_BUCKET = S3.Bucket(config['dataset_bucket_name'])
-    for obj in DATASET_BUCKET.objects.filter(Prefix = name):
-        if not dataset_cache.subpath_exists(obj.key):
-            subpath = os.path.dirname(obj.key)
-            dataset_cache.ensure_subpath_exists(subpath)
-            storage_path = dataset_cache.path / Path(obj.key)
-            DATASET_BUCKET.download_file(obj.key, str(storage_path))
+    # filter bucket contents by prefix (add / to avoid accidental matching of invalid substrings
+    # of valid dataset names)
+    i = 0
+    for obj in DATASET_BUCKET.objects.filter(Prefix = name + '/'):
+        # check to be sure object is not a folder by peeking at its last character
+        i+=1
+        if obj.key[-1] != '/':
+            if not dataset_cache.subpath_exists(obj.key):
+                subpath = os.path.dirname(obj.key)
+                dataset_cache.ensure_subpath_exists(subpath)
+                storage_path = dataset_cache.path / Path(obj.key)
+                DATASET_BUCKET.download_file(obj.key, str(storage_path))
+    if i == 0:
+        raise ValueError(name)

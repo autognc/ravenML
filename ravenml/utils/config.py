@@ -11,10 +11,13 @@ from pathlib import Path
 from ravenml.utils.local_cache import global_cache
 
 # required configuration fields
-CONFIG_FIELDS = sorted(['dataset_bucket_name', 'artifact_bucket_name'])
+CONFIG_FIELDS = sorted(['dataset_bucket_name', 'model_bucket_name'])
 
-def get_config():
+def get_config() -> dict:
     """Retrieves the current configuration.
+    
+    Returns:
+        dict: current configuration
 
     Raises:
         ValueError: If a required field is missing or an invalid field is found.
@@ -45,5 +48,7 @@ def update_config(config: dict):
     Args:
         config (dict): new configuration as a dict
     """
+    # ensure our output location actually exists
+    global_cache.ensure_exists()
     with open(global_cache.path / Path('config.yml'), 'w') as outfile:
         yaml.dump(config, outfile, default_flow_style=False)
