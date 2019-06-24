@@ -28,8 +28,8 @@ pip install --editable .
 ```
 
 ## Configuration
-ravenML must be configured with the name of the S3 buckets you wish to pull [Jigsaw](https://github.com/autognc/jigsaw)-
-created datasets from and upload trained models to.
+ravenML must be configured with the name of the S3 buckets you wish to pull [Jigsaw](https://github.com/autognc/jigsaw)-created
+datasets from and upload trained models to.
 
 After installation, set this configuration by running:
 ```bash
