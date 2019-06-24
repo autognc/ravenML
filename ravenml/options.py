@@ -26,7 +26,8 @@ def no_user_callback(ctx, param: click.core.Option, value: bool):
         for arg, value in ctx.params.items():
             if value is None:
                 # ctx.exit('You must supply the --%s argument when using --no-user!'%arg)
-                raise click.exceptions.BadParameter('bad bad', ctx=ctx, param=arg, param_hint=str(arg))
+                raise click.exceptions.BadParameter('You must provide this argument when using --no-user!',
+                                                    ctx=ctx, param=arg, param_hint=str(arg))
 
 
 ### OPTIONS ###
