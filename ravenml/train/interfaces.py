@@ -60,10 +60,16 @@ class TrainOutput(object):
     Args:
         metadata (dict): metadata associated with training
         artifact_path (Path): path to root of training artifacts
+        model_path (Path): path to final exported model
+        extra_files (list): list of Path objects to extra files associated with the training
+        local_mode (bool): whether this training was run in local mode or not
 
     Attributes:
         metadata (dict): metadata associated with training
         artifact_path (Path): path to root of training artifacts
+        model_path (Path): path to final exported model
+        extra_files (list): list of Path objects to extra files associated with the training
+        local_mode (bool): whether this training was run in local mode or not
     """
     def __init__(self, metadata: dict, artifact_path: Path, model_path: Path, extra_files: list, local_mode: bool):
         self._metadata = metadata
