@@ -8,6 +8,8 @@ Command group for training in ravenml.
 import click
 import json
 import shortuuid
+import os
+import boto3
 from pathlib import Path
 from pkg_resources import iter_entry_points
 from click_plugins import with_plugins
@@ -16,6 +18,8 @@ from ravenml.utils.dataset import get_dataset
 from ravenml.utils.question import cli_spinner
 from ravenml.utils.save import upload_file_to_s3, upload_dict_to_s3_as_json
 from ravenml.options import no_user_opt
+
+EC2_ENV_VAR_NAME = 'EC2_ID'
 
 ### OPTIONS ###
 # dataset_opt = click.option(
@@ -28,16 +32,21 @@ from ravenml.options import no_user_opt
 #     help='Keep all model artifacts local.'
 # )
 
+ec2_kill_opt = click.option(
+    '--no-kill', 'no_kill', is_flag=True,
+    help='Do not kill EC2 instance ravenML is running on after training.'
+)
 
 ### COMMANDS ###
 @with_plugins(iter_entry_points('ravenml.plugins.train'))
 @click.group(help='Training commands.')
 @click.pass_context
+@ec2_kill_opt
 # @no_user_opt
 # @dataset_opt
 # @local_opt
 # def train(ctx: click.Context, local: str, dataset: str):
-def train(ctx: click.Context):
+def train(ctx: click.Context, no_kill: bool):
     """ Training command group.
     
     Args:
@@ -61,7 +70,7 @@ def train(ctx: click.Context):
 @train.resultcallback()
 @click.pass_context
 # def process_result(ctx: click.Context, result: TrainOutput, local: str, dataset: str):
-def process_result(ctx: click.Context, result: TrainOutput):
+def process_result(ctx: click.Context, result: TrainOutput, no_kill: bool):
     """Processes the result of a training by analyzing the given TrainOutput object.
     This callback is called after ANY command originating from the train command 
     group, hence the check for commands other than training plugins.
@@ -75,11 +84,20 @@ def process_result(ctx: click.Context, result: TrainOutput):
 
     # need to consider issues with this being called on every call to train
     if ctx.invoked_subcommand != 'list' and result is not None:
+        # upload if not in local mode
         if not result.local_mode:
             uuid = cli_spinner('Uploading artifacts...', _upload_result, result)
             click.echo(f'Artifact UUID: {uuid}')
         else:
             click.echo(f'LOCAL MODE: Not uploading model to S3. Model is located at: {result.artifact_path}')
+            
+        # kill if on ec2
+        ec2_instance_id = os.getenv(EC2_ENV_VAR_NAME)
+        if ec2_instance_id and not no_kill:
+            click.echo(f'EC2 Runtime detected.')
+            client = boto3.client('ec2')
+            client.terminate_instances(InstanceIds=[ec2_instance_id], DryRun=False)
+
     return result
 
 @train.command()
