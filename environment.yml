@@ -9,6 +9,7 @@ channels:
 dependencies:
   - python=3.6.8
   - colorama
+  - pyaml=19.4
   - pip:
     - click==7.0
     - click-plugins==1.0.4
