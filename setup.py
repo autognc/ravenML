@@ -13,6 +13,7 @@ setup(
         'shortuuid>=0.5.0',
         'halo>=0.0.26'
         'colorama>=0.3.9',
+        'pyaml>=19.4.1',
     ],
     tests_require=[
         'pytest',

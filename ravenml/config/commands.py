@@ -22,8 +22,9 @@ dataset_bucket_name_opt = click.option(
     help='Dataset bucket name.')
 
 model_bucket_name_opt = click.option(
-    '-a', '--model-bucket', type=str, is_eager=True,
+    '-m', '--model-bucket', type=str, is_eager=True,
     help='Model artifact destination bucket name.')
+
 
 ### COMMANDS ###
 @click.group(help='Configuration commands.')

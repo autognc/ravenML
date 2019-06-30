@@ -27,7 +27,7 @@ class TrainInput(object):
     def __init__(self, inquire=True, **kwargs):
         if inquire:
             self._artifact_path = Path(os.path.expanduser(user_input('Enter filepath for artifacts:'))) if \
-                                    user_confirms('Run in local mode?') else None
+                                    user_confirms('Run in local mode? (No S3 upload)') else None
             dataset_options = cli_spinner('Finding datasets on S3', get_dataset_names)
             dataset = user_selects('Choose dataset:', dataset_options)
             self._dataset = cli_spinner(f'Downloading {dataset} from S3...', get_dataset, dataset)
@@ -60,10 +60,16 @@ class TrainOutput(object):
     Args:
         metadata (dict): metadata associated with training
         artifact_path (Path): path to root of training artifacts
+        model_path (Path): path to final exported model
+        extra_files (list): list of Path objects to extra files associated with the training
+        local_mode (bool): whether this training was run in local mode or not
 
     Attributes:
         metadata (dict): metadata associated with training
         artifact_path (Path): path to root of training artifacts
+        model_path (Path): path to final exported model
+        extra_files (list): list of Path objects to extra files associated with the training
+        local_mode (bool): whether this training was run in local mode or not
     """
     def __init__(self, metadata: dict, artifact_path: Path, model_path: Path, extra_files: list, local_mode: bool):
         self._metadata = metadata
