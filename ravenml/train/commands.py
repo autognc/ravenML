@@ -22,15 +22,15 @@ from ravenml.options import no_user_opt
 EC2_ENV_VAR_NAME = 'EC2_ID'
 
 ### OPTIONS ###
-# dataset_opt = click.option(
-#     '-d', '--dataset', 'dataset', type=str, is_eager=True,
-#     help='Dataset to use for training.'
-# )
+dataset_opt = click.option(
+    '-d', '--dataset', 'dataset', type=str, is_eager=True,
+    help='Name of dataset on S3 for training. Ignored without --no-user.'
+)
 
-# local_opt = click.option(
-#     '-l', '--local', 'local', type=str, is_eager=True, default='None',
-#     help='Keep all model artifacts local.'
-# )
+local_opt = click.option(
+    '-l', '--local', 'local', type=str, is_eager=True, default='None',
+    help='Do not upload to S3 and instead save artifacts to the provided filepath. Ignored without --no-user.'
+)
 
 ec2_kill_opt = click.option(
     '--no-kill', 'no_kill', is_flag=True,
@@ -42,11 +42,10 @@ ec2_kill_opt = click.option(
 @click.group(help='Training commands.')
 @click.pass_context
 @ec2_kill_opt
-# @no_user_opt
-# @dataset_opt
-# @local_opt
-# def train(ctx: click.Context, local: str, dataset: str):
-def train(ctx: click.Context, no_kill: bool):
+@no_user_opt
+@dataset_opt
+@local_opt
+def train(ctx: click.Context, local: str, dataset: str, no_kill: bool):
     """ Training command group.
     
     Args:
@@ -54,23 +53,23 @@ def train(ctx: click.Context, no_kill: bool):
         local (str): local filepath. defaults to 'None' and only used if in no-user mode
         dataset (str): dataset name. None if not in no-user mode
     """
-    # if ctx.obj['NO_USER']:
-    #     # if no_user is true, make a TrainInput from the other flags
-    #     try:
-    #         dataset_obj = cli_spinner('Retrieving dataset from s3...', get_dataset, dataset)
-    #         if local == 'None': 
-    #             local = None
-    #         ti = TrainInput(inquire=False, dataset= dataset_obj, artifact_path=local)
-    #         # assign to context for use in plugin
-    #         ctx.obj = ti
-    #     except ValueError as e:
-    #         raise click.exceptions.BadParameter(dataset, ctx=ctx, param=dataset, param_hint='dataset name')
+    if ctx.obj['NO_USER']:
+        # if no_user is true, make a TrainInput from the other flags
+        try:
+            dataset_obj = cli_spinner('Retrieving dataset from s3...', get_dataset, dataset)
+            if local == 'None': 
+                local = None
+            ti = TrainInput(inquire=False, dataset= dataset_obj, artifact_path=local)
+            # assign to context for use in plugin
+            ctx.obj = ti
+        except ValueError as e:
+            raise click.exceptions.BadParameter(dataset, ctx=ctx, param=dataset, param_hint='dataset name')
     pass
 
 @train.resultcallback()
 @click.pass_context
 # def process_result(ctx: click.Context, result: TrainOutput, local: str, dataset: str):
-def process_result(ctx: click.Context, result: TrainOutput, no_kill: bool):
+def process_result(ctx: click.Context, result: TrainOutput, local: str, dataset: str,  no_kill: bool):
     """Processes the result of a training by analyzing the given TrainOutput object.
     This callback is called after ANY command originating from the train command 
     group, hence the check for commands other than training plugins.
