@@ -27,7 +27,7 @@ class TrainInput(object):
     def __init__(self, inquire=True, **kwargs):
         if inquire:
             self._artifact_path = Path(os.path.expanduser(user_input('Enter filepath for artifacts:'))) if \
-                                    user_confirms('Run in local mode?') else None
+                                    user_confirms('Run in local mode? (No S3 upload)') else None
             dataset_options = cli_spinner('Finding datasets on S3', get_dataset_names)
             dataset = user_selects('Choose dataset:', dataset_options)
             self._dataset = cli_spinner(f'Downloading {dataset} from S3...', get_dataset, dataset)
