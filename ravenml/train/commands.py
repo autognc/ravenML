@@ -10,6 +10,8 @@ import json
 import shortuuid
 import os
 import boto3
+from urllib.request import urlopen
+from urllib.error import URLError
 from pathlib import Path
 from pkg_resources import iter_entry_points
 from click_plugins import with_plugins
@@ -19,7 +21,7 @@ from ravenml.utils.question import cli_spinner
 from ravenml.utils.save import upload_file_to_s3, upload_dict_to_s3_as_json
 from ravenml.options import no_user_opt
 
-EC2_ENV_VAR_NAME = 'EC2_ID'
+EC2_INSTANCE_ID_URL = 'http://169.254.169.254/latest/meta-data/instance-id'
 
 ### OPTIONS ###
 dataset_opt = click.option(
@@ -91,11 +93,17 @@ def process_result(ctx: click.Context, result: TrainOutput, local: str, dataset:
             click.echo(f'LOCAL MODE: Not uploading model to S3. Model is located at: {result.artifact_path}')
             
         # kill if on ec2
-        ec2_instance_id = os.getenv(EC2_ENV_VAR_NAME)
-        if ec2_instance_id and not no_kill:
-            click.echo(f'EC2 Runtime detected.')
-            client = boto3.client('ec2')
-            client.terminate_instances(InstanceIds=[ec2_instance_id], DryRun=False)
+        if not no_kill:
+            click.echo('Attempting to kill EC2 instance...')
+            try:
+                with urlopen(EC2_INSTANCE_ID_URL, timeout=5) as url:
+                    ec2_instance_id = url.read().decode('utf-8')
+                click.echo(f'EC2 Runtime detected.')
+                client = boto3.client('ec2')
+                client.terminate_instances(InstanceIds=[ec2_instance_id], DryRun=False)
+            except URLError:
+                click.echo('No EC2 runtime detected.')
+
 
     return result
 
