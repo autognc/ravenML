@@ -33,6 +33,8 @@ def data(ctx):
     """
     pass
 
+# TODO: eventually this will handle uploading/deleting the created
+# dataset given by a plugin, see train.commands.process_result for example
 @data.resultcallback()
 @click.pass_context
 def process_result(ctx, result):
@@ -67,8 +69,15 @@ def inspect(dataset_name: str):
     try:
         metadata = cli_spinner("Downloading dataset metadata from S3...", get_dataset_metadata, dataset_name)
         click.echo(_stringify_metadata(metadata, colored=True))
+    # get_dataset_metadata will raise a value error if the given dataset name
+    # cannot be found
     except ValueError as e:
         raise click.exceptions.BadParameter(dataset_name, param=dataset_name, param_hint='dataset name')
+        
+# TODO
+@data.command(help='Create a new dataset.')
+def create():
+    click.echo("Eventually this will create datasets for you.")
 
 
 ### HELPERS ###

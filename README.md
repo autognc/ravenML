@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.com/autognc/ravenML.svg?branch=master)](https://travis-ci.com/autognc/ravenML)
+<!-- [![Build Status](https://travis-ci.com/autognc/ravenML.svg?branch=master)](https://travis-ci.com/autognc/ravenML) -->
 
 # ravenML
 CLI tool for machine learning model training.

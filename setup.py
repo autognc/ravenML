@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(
-    name='ravenML',
+    name='ravenml',
     version='0.0.1',
     description='Training CLI Tool',
     packages=['ravenml'],
