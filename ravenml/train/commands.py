@@ -44,7 +44,7 @@ ec2_kill_opt = click.option(
 @click.group(help='Training commands.')
 @click.pass_context
 @ec2_kill_opt
-@no_user_opt
+# @no_user_opt
 @dataset_opt
 @local_opt
 def train(ctx: click.Context, local: str, dataset: str, no_kill: bool):
@@ -55,7 +55,8 @@ def train(ctx: click.Context, local: str, dataset: str, no_kill: bool):
         local (str): local filepath. defaults to 'None' and only used if in no-user mode
         dataset (str): dataset name. None if not in no-user mode
     """
-    if ctx.obj['NO_USER']:
+    # if ctx.obj['NO_USER']:
+    if(dataset):
         # if no_user is true, make a TrainInput from the other flags
         try:
             dataset_obj = cli_spinner('Retrieving dataset from s3...', get_dataset, dataset)

@@ -5,11 +5,12 @@ Date Created:   05/03/2019
 Provides useful helper functions for training plugins.
 """
 
+import click
 from datetime import datetime
 from ravenml.data.interfaces import Dataset
 from ravenml.utils.question import user_input
 
-def fill_basic_metadata(metadata: dict, dataset: Dataset):
+def fill_basic_metadata(metadata: dict, dataset: Dataset, name=None, comments=None):
     """Adds basic metadata to the provided dictionary with user input
     and dataset fields.
     
@@ -27,8 +28,8 @@ def fill_basic_metadata(metadata: dict, dataset: Dataset):
         >>> metadata = {}
         >>> fill_basic_metadata(metadata, dataset)
     """
-    metadata['created_by'] = user_input('Please enter your first and last name:')
-    metadata['comments'] = user_input('Please enter any comments about this training:')
+    metadata['created_by'] = name if name else user_input('Please enter your first and last name:')
+    metadata['comments'] = comments if comments else user_input('Please enter any comments about this training:')
     metadata['date_started_at'] = datetime.utcnow().isoformat() + "Z"
     metadata['dataset_used'] = dataset.metadata
     
