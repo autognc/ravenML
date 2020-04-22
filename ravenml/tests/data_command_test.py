@@ -13,7 +13,7 @@ from pathlib import Path
 from moto import mock_s3
 from shutil import copyfile
 from click.testing import CliRunner
-from ravenml.data.commands import list, inspect
+from ravenml.data.commands import list_datasets, inspect_dataset
 from ravenml.utils.config import get_config
 from ravenml.utils.local_cache import global_cache
 from ravenml.utils.dataset import dataset_cache
@@ -59,14 +59,14 @@ def teardown_module():
 def test_list_no_flags():
     """Tests the list subcommmand with no flags.
     """
-    result = runner.invoke(list)
+    result = runner.invoke(list_datasets)
     assert result.exit_code == 0
     assert result.output == 'test_dataset_1\ntest_dataset_2\n'
 
 def test_list_detailed_flag():
     """Tests the list subcommmand with the -d (--detailed) flag
     """
-    result = runner.invoke(list, ['-d'])
+    result = runner.invoke(list_datasets, ['-d'])
     assert result.exit_code == 0
     with open(test_data_dir / Path('detailed_list_output.txt'), 'r') as myfile:
         data = myfile.read()
@@ -75,7 +75,7 @@ def test_list_detailed_flag():
 def test_inspect():
     """Tests the inspect subcommand.
     """
-    result = runner.invoke(inspect, ['test_dataset_1'])
+    result = runner.invoke(inspect_dataset, ['test_dataset_1'])
     assert result.exit_code == 0
     with open(test_data_dir / Path('inspection_output.txt'), 'r') as myfile:
         data = myfile.read()
@@ -84,5 +84,5 @@ def test_inspect():
 def test_inspect_invalid_dataset_name():
     """Tests the inspect subcommand with an invalid dataset name.
     """
-    result = runner.invoke(inspect, ['bad_dataset_name'])
+    result = runner.invoke(inspect_dataset, ['bad_dataset_name'])
     assert result.exit_code == click.exceptions.BadParameter.exit_code

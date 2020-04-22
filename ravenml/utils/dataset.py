@@ -7,17 +7,18 @@ Utility module for managing Jigsaw created datasets.
 
 import os
 import json
-
 import boto3
 from botocore.exceptions import ClientError
 from pathlib import Path
-
 from ravenml.utils.local_cache import LocalCache, global_cache
-from ravenml.data.interfaces import Dataset
 from ravenml.utils.config import get_config
+from ravenml.utils.aws import list_bucket_prefixes, download_prefix
+from ravenml.data.interfaces import Dataset
 
 # LocalCache within local cache for datasets
 dataset_cache = LocalCache(path=global_cache.path / Path('datasets'))
+# name of config field
+BUCKET_FIELD = 'dataset_bucket_name'
 
 ### PUBLIC METHODS ###
 def get_dataset_names() -> list:
@@ -26,14 +27,8 @@ def get_dataset_names() -> list:
     Returns:
         list: dataset names
     """
-    S3 = boto3.resource('s3')
     config = get_config()
-    bucket_contents = S3.meta.client.list_objects(Bucket=config['dataset_bucket_name'], Delimiter='/')
-    dataset_names = []
-    if bucket_contents.get('CommonPrefixes') is not None:
-        for obj in bucket_contents.get('CommonPrefixes'):
-            dataset_names.append(obj.get('Prefix')[:-1])
-    return dataset_names
+    return list_bucket_prefixes(config[BUCKET_FIELD])
 
 def get_dataset_metadata(name: str, no_check=False) -> dict:
     """Retrieves dataset metadata. Downloads from S3 if necessary.
@@ -100,20 +95,6 @@ def _ensure_dataset(name: str):
     Raises:
         ValueError: if dataset name is invalid (no matching objects in S3 bucket)
     """
-    S3 = boto3.resource('s3')
     config = get_config()
-    DATASET_BUCKET = S3.Bucket(config['dataset_bucket_name'])
-    # filter bucket contents by prefix (add / to avoid accidental matching of invalid substrings
-    # of valid dataset names)
-    i = 0
-    for obj in DATASET_BUCKET.objects.filter(Prefix = name + '/'):
-        # check to be sure object is not a folder by peeking at its last character
-        i+=1
-        if obj.key[-1] != '/':
-            if not dataset_cache.subpath_exists(obj.key):
-                subpath = os.path.dirname(obj.key)
-                dataset_cache.ensure_subpath_exists(subpath)
-                storage_path = dataset_cache.path / Path(obj.key)
-                DATASET_BUCKET.download_file(obj.key, str(storage_path))
-    if i == 0:
+    if not download_prefix(config[BUCKET_FIELD], name, dataset_cache):
         raise ValueError(name)

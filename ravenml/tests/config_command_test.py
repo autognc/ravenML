@@ -11,7 +11,7 @@ import re
 from pathlib import Path
 from shutil import copyfile
 from click.testing import CliRunner
-from ravenml.config.commands import show, update
+from ravenml.config.commands import config, show, update
 from ravenml.cli import clean
 from ravenml.utils.local_cache import global_cache, RAVENML_LOCAL_STORAGE_PATH
 from ravenml.utils.dataset import dataset_cache
@@ -57,7 +57,7 @@ def test_show():
 def test_update():
     """Tests the update subcommand in no user mode.
     """
-    result = runner.invoke(update, ['--no-user', '-d', 'test_data_buck', '-a', 'test_art_buck'])
+    result = runner.invoke(update, ['--no-user', '-d', 'test_data_buck', '-m', 'test_art_buck', '-i', 'test_img_buck'])
     assert result.exit_code == 0
     with open(test_data_dir / Path('config_update_contents.txt'), 'r') as myfile:
         data = myfile.read()
@@ -69,13 +69,13 @@ def test_update_no_config():
     """Basically the same as test_update, except we clean the existing configuration
     file away before calling it. Ensures the command properly deals with this scanario.
     """
-    config = get_config()
+    conf = get_config()
     global_cache.clean()
-    result = runner.invoke(update, ['--no-user', '-d', 'test_data_buck', '-a', 'test_art_buck'])
+    result = runner.invoke(config, ['update', '--no-user', '-d', 'test_data_buck', '-m', 'test_art_buck', '-i', 'test_img_buck'])
     assert result.exit_code == 0
     with open(test_data_dir / Path('config_update_contents.txt'), 'r') as myfile:
         data = myfile.read()
     with open(global_cache.path / Path('config.yml'), 'r') as myfile:
         config_contents = myfile.read()
     assert config_contents == data
-    update_config(config)
+    update_config(conf)
