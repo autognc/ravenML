@@ -31,7 +31,7 @@ def fill_basic_metadata(metadata: dict, dataset: Dataset, name=None, comments=No
     metadata['created_by'] = name if name else user_input('Please enter your first and last name:')
     metadata['comments'] = comments if comments else user_input('Please enter any comments about this training:')
     metadata['date_started_at'] = datetime.utcnow().isoformat() + "Z"
-    metadata['dataset_used'] = dataset.metadata
+    # metadata['dataset_used'] = dataset.metadata
     
 ### DYNAMIC IMPORT FUNCTION ###
 # NOTE: this function should be used in all plugins, but the function is NOT
