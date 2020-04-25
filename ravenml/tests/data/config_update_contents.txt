@@ -1,2 +1,3 @@
-model_bucket_name: test_art_buck
 dataset_bucket_name: test_data_buck
+image_bucket_name: test_img_buck
+model_bucket_name: test_art_buck

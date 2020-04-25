@@ -1,7 +1,7 @@
 import pytest
 import os
 import boto3
-from ..utils.save import Save
+from ..utils.aws import Save
 
 class TestSave(object):
     def tests_create_file(self, tmp_path):

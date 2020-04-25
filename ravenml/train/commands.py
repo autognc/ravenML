@@ -18,7 +18,7 @@ from click_plugins import with_plugins
 from ravenml.train.interfaces import TrainInput, TrainOutput
 from ravenml.utils.dataset import get_dataset
 from ravenml.utils.question import cli_spinner
-from ravenml.utils.save import upload_file_to_s3, upload_dict_to_s3_as_json
+from ravenml.utils.aws import upload_file_to_s3, upload_dict_to_s3_as_json
 from ravenml.options import no_user_opt
 
 EC2_INSTANCE_ID_URL = 'http://169.254.169.254/latest/meta-data/instance-id'

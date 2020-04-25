@@ -1,2 +1,3 @@
-model_bucket_name: test me
 dataset_bucket_name: skr-datasets-test
+image_bucket_name: test me
+model_bucket_name: test me

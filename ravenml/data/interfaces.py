@@ -18,6 +18,13 @@ TEST_DIR = 'test'
 
 # TODO add necessary functionality to this class as needed
 
+class CreateInput(object):
+    """Represents a dataset creation input. Contains all plugin-independent
+    information necessary for training. Plugins can define their own behavior
+    for getting additional information.
+
+    """
+
 class Dataset(object):
     """Represents a training dataset.
 

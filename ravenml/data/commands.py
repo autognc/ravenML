@@ -7,7 +7,10 @@ Command group for dataset exploration in ravenml.
 
 import pydoc
 import click
+from pkg_resources import iter_entry_points
+from click_plugins import with_plugins
 from colorama import init, Fore
+from ravenml.utils.imageset import get_imageset_names, get_imageset_metadata
 from ravenml.utils.dataset import get_dataset_names, get_dataset_metadata
 from ravenml.utils.question import cli_spinner
 
@@ -23,10 +26,10 @@ detailed_opt = click.option(
 
 
 ### COMMANDS ###
-@click.group(help='Dataset exploration commands.')
+@click.group(help='Data exploration and dataset creation commands.')
 @click.pass_context
 def data(ctx):
-    """Dataset exploration command group.
+    """Data exploration and dataset creation command group.
     
     Args:
         ctx (Context): click context object
@@ -37,12 +40,46 @@ def data(ctx):
 # dataset given by a plugin, see train.commands.process_result for example
 @data.resultcallback()
 @click.pass_context
-def process_result(ctx, result):
+def process_result(ctx: click.Context, result):
     pass
 
+# TODO: determine interfaces for this command
+@with_plugins(iter_entry_points('ravenml.plugins.data'))
+@data.group(help='Create a new dataset.')
+def create():
+    click.echo("Eventually this will create datasets for you.")
+
+## Imageset Commands ##
+@data.command(help="List available image sets.")
+def list_imagesets():
+    """List available image sets on S3.
+    """
+    imageset_names = cli_spinner("Finding image sets on S3...", get_imageset_names)
+    for name in imageset_names:
+        click.echo(name)
+
+@data.command(help='See detailed metadata about an image set.')
+@click.argument('imageset_name')
+def inspect_imageset(imageset_name: str):
+    """See detailed metadata about a dataset.
+
+    Args:
+        dataset_name (str): string name of the dataset to inspect
+    """
+    try:
+        metadata = cli_spinner("Downloading imageset metadata from S3...", get_imageset_metadata, imageset_name)
+        if 'pose' in metadata.keys():
+            click.echo(Fore.RED + ('Set-wide metadata not found. '
+                                    'Falling back to sample image metadata.'))
+        click.echo(_stringify_metadata(metadata, colored=True))
+    # get_imageset_metadata will raise a value error imageset name not found
+    except ValueError as e:
+        raise click.exceptions.BadParameter(imageset_name, param=imageset_name, param_hint='imageset name')
+
+## Dataset commands ##
 @data.command(help='List available datasets.')
 @detailed_opt
-def list(detailed: bool):
+def list_datasets(detailed: bool):
     """List available datasets.
     
     Args:
@@ -60,7 +97,7 @@ def list(detailed: bool):
 
 @data.command(help='See detailed metadata about a dataset.')
 @click.argument('dataset_name')
-def inspect(dataset_name: str):
+def inspect_dataset(dataset_name: str):
     """See detailed metadata about a dataset.
 
     Args:
@@ -74,11 +111,6 @@ def inspect(dataset_name: str):
     except ValueError as e:
         raise click.exceptions.BadParameter(dataset_name, param=dataset_name, param_hint='dataset name')
         
-# TODO
-@data.command(help='Create a new dataset.')
-def create():
-    click.echo("Eventually this will create datasets for you.")
-
 
 ### HELPERS ###
 def _stringify_metadata(metadata: dict, colored=False) -> str:

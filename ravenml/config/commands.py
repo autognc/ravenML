@@ -9,14 +9,17 @@ import click
 from pathlib import Path
 from colorama import init, Fore
 from ravenml.utils.question import user_input, user_confirms
-from ravenml.utils.config import CONFIG_FIELDS
+from ravenml.utils.config import CONFIG_FIELDS, get_config, update_config
 from ravenml.utils.local_cache import global_cache
-from ravenml.utils.config import get_config, update_config
 from ravenml.options import no_user_opt
 
 init()
     
 ### OPTIONS ###
+image_bucket_name_opt = click.option(
+    '-i', '--image-bucket', type=str, is_eager=True,
+    help='Image bucket name.')
+    
 dataset_bucket_name_opt = click.option(
     '-d', '--dataset-bucket', type=str, is_eager=True,
     help='Dataset bucket name.')
@@ -69,9 +72,10 @@ def show(ctx: click.Context):
 @config.command(help='Update current config.')
 @click.pass_context
 @no_user_opt
-@dataset_bucket_name_opt
 @model_bucket_name_opt
-def update(ctx: click.Context, model_bucket: str, dataset_bucket: str):
+@dataset_bucket_name_opt
+@image_bucket_name_opt
+def update(ctx: click.Context, image_bucket: str, dataset_bucket: str, model_bucket: str):
     """Update current config.
     
     Args:
@@ -99,6 +103,8 @@ def update(ctx: click.Context, model_bucket: str, dataset_bucket: str):
     
     # update configuration fields
     if ctx.obj['NO_USER']:
+        # TODO: make this scalable to any number of config fields
+        config['image_bucket_name'] = image_bucket
         config['model_bucket_name'] = model_bucket
         config['dataset_bucket_name'] = dataset_bucket
     else:
