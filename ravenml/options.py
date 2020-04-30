@@ -45,5 +45,14 @@ verbose_opt = click.option(
     help='Run command in verbose mode.'
 )
 
+author_opt = click.option(
+    '-a', '--author', type=str, 
+    help='First and Last name of user.'
+)
+
+comments_opt = click.option(
+    '--comments', type=str, 
+    help='Comments about the training.'    
+)
 
 ### PASS DECORATORS ###
