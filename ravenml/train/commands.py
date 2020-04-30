@@ -74,7 +74,7 @@ def train(ctx: click.Context, local: str, dataset: str, no_kill: bool):
             # assign to context for use in plugin
             ctx.obj = ti
         except ValueError as e:
-            hint = 'dataset_name, no such dataset exists on S3:'
+            hint = 'dataset name, no such dataset exists on S3:'
             raise click.exceptions.BadParameter(dataset, ctx=ctx, param=dataset, param_hint=hint)
 
 @train.resultcallback()
