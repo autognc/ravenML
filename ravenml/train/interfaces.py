@@ -10,31 +10,43 @@ from ravenml.utils.question import cli_spinner, user_input, user_selects, user_c
 from ravenml.utils.dataset import get_dataset_names, get_dataset
 from ravenml.data.interfaces import Dataset
 
+
+
 class TrainInput(object):
     """Represents a training input. Contains all plugin-independent information
     necessary for training. Plugins can define their own behavior for getting
     additional information.
 
-    Args:
-        inquire (bool, optional): ask user for inputs or not. Defaults to True
-        **kwargs (dict, optional): should be provided if inquire is set to False
-            to populate TrainInput fields
+    Kwargs:
+        dataset_name (str, optional): name of dataset stored on S3 to use.
+            Defaults to None, in which case user is prompted.
+        artifact_path (str, optional): local filepath to save artifacts. 
+            Defaults to None to direct S3 upload.
 
     Attributes:
         dataset (Dataset): Dataset in use
         artifact_path (Path): path to save artifacts. None if uploading to s3
     """
-    def __init__(self, inquire=True, **kwargs):
-        if inquire:
-            self._artifact_path = Path(os.path.expanduser(user_input('Enter filepath for artifacts:'))) if \
-                                    user_confirms('Run in local mode? (No S3 upload)') else None
-            dataset_options = cli_spinner('Finding datasets on S3', get_dataset_names)
-            dataset = user_selects('Choose dataset:', dataset_options)
-            self._dataset = cli_spinner(f'Downloading {dataset} from S3...', get_dataset, dataset)
-        else:
-            self._dataset = kwargs.get('dataset')
-            self._artifact_path = Path(kwargs.get('artifact_path'))
     
+    ## NOTE: ##
+    # Constructor uses only kwargs to make it compatible for use with
+    # a Click pass decorator with ensure=True, which requires a default 
+    # constructor with no positional arguments. 
+    # The pass decorator with ensure=True is what allows 
+    # creation of a TrainInput directly in the ravenml train command
+    # ONLY when arguments are passed, which allows --help and other plugin
+    # subcommands to be unaffected by TrainInput construction when a training
+    # is not actually being started.
+    def __init__(self, dataset_name=None, artifact_path=None):
+        # prompt for dataset if not provided
+        if dataset_name is None:
+            dataset_options = cli_spinner('Finding datasets on S3...', get_dataset_names)
+            dataset_name = user_selects('Choose dataset:', dataset_options)
+        # download dataset and populate field
+        self._dataset = cli_spinner(f'Downloading {dataset_name} from S3...', 
+            get_dataset, dataset_name)
+        self._artifact_path = artifact_path
+
     def local_mode(self):
         return self.artifact_path is not None
 
@@ -114,3 +126,15 @@ class TrainOutput(object):
     def local_mode(self):
         return self._local_mode
     
+
+    
+# dictionary of required information for training input
+# and associated prompt logic
+# input_dict = {
+#     'dataset': self._prompt_dataset(),
+# }
+
+# # iterate over required kwargs and prompt if any are not found
+# for field in input_dict.keys():
+#     if field not in kwargs.keys():
+#         input_dict[field]()

@@ -25,18 +25,18 @@ EC2_INSTANCE_ID_URL = 'http://169.254.169.254/latest/meta-data/instance-id'
 
 ### OPTIONS ###
 dataset_opt = click.option(
-    '-d', '--dataset', 'dataset', type=str, is_eager=True,
-    help='Name of dataset on S3 for training. Ignored without --no-user.'
+    '-d', '--dataset', 'dataset', type=str,
+    help='Name of dataset on S3 for training.'
 )
 
 local_opt = click.option(
-    '-l', '--local', 'local', type=str, is_eager=True, default='None',
-    help='Do not upload to S3 and instead save artifacts to the provided filepath. Ignored without --no-user.'
+    '-l', '--local', 'local', type=str,
+    help='Do not upload to S3 and instead save artifacts to the provided filepath.'
 )
 
 ec2_kill_opt = click.option(
     '--no-kill', 'no_kill', is_flag=True,
-    help='Do not kill EC2 instance ravenML is running on after training.'
+    help='Do not kill EC2 instance ravenML is running on after training. Ignored if not on EC2.'
 )
 
 ### COMMANDS ###
@@ -44,7 +44,6 @@ ec2_kill_opt = click.option(
 @click.group(help='Training commands.')
 @click.pass_context
 @ec2_kill_opt
-# @no_user_opt
 @dataset_opt
 @local_opt
 def train(ctx: click.Context, local: str, dataset: str, no_kill: bool):
@@ -54,20 +53,29 @@ def train(ctx: click.Context, local: str, dataset: str, no_kill: bool):
         ctx (Context): click context object
         local (str): local filepath. defaults to 'None' and only used if in no-user mode
         dataset (str): dataset name. None if not in no-user mode
+        no_kill (bool): whether to kill EC2 instance after training
     """
-    # if ctx.obj['NO_USER']:
-    if(dataset):
-        # if no_user is true, make a TrainInput from the other flags
+    ## NOTE: ##
+    # All plugins require a TrainInput object to begin training. ravenML 
+    # guarantees this in two ways for two different cases:
+    #   1.  User did NOT provide any arguments to this command and thus 
+    #       must be prompted for dataset name. TrainInput object is created 
+    #       automatically by pass_train decorator in plugin since it does not need to
+    #       receive any information from this command. Therefore, NO action is taken
+    #       so that this command does not do anything for calls to other plugin 
+    #       subcommands such as help.
+    #   2.  User DID provide arguments to this command and thus is kicking off
+    #       a training, therefore NOT calling any other plugin subcommand. This means
+    #       it is ok (and necessary_ to create a TrainInput in this command, as we know
+    #       for sure which plugin subcommand is coming next.
+    if dataset or local:
         try:
-            dataset_obj = cli_spinner('Retrieving dataset from s3...', get_dataset, dataset)
-            if local == 'None': 
-                local = None
-            ti = TrainInput(inquire=False, dataset= dataset_obj, artifact_path=local)
+            ti = TrainInput(dataset_name=dataset, artifact_path=local)
             # assign to context for use in plugin
             ctx.obj = ti
         except ValueError as e:
-            raise click.exceptions.BadParameter(dataset, ctx=ctx, param=dataset, param_hint='dataset name')
-    pass
+            hint = 'dataset_name, no such dataset exists on S3:'
+            raise click.exceptions.BadParameter(dataset, ctx=ctx, param=dataset, param_hint=hint)
 
 @train.resultcallback()
 @click.pass_context
@@ -85,7 +93,7 @@ def process_result(ctx: click.Context, result: TrainOutput, local: str, dataset:
     """
 
     # need to consider issues with this being called on every call to train
-    if ctx.invoked_subcommand != 'list' and result is not None:
+    if result is not None:
         # upload if not in local mode
         if not result.local_mode:
             uuid = cli_spinner('Uploading artifacts...', _upload_result, result)
@@ -95,7 +103,7 @@ def process_result(ctx: click.Context, result: TrainOutput, local: str, dataset:
             
         # kill if on ec2
         if not no_kill:
-            click.echo('Attempting to kill EC2 instance...')
+            click.echo('Checking for EC2 instance...')
             try:
                 with urlopen(EC2_INSTANCE_ID_URL, timeout=5) as url:
                     ec2_instance_id = url.read().decode('utf-8')
@@ -104,17 +112,10 @@ def process_result(ctx: click.Context, result: TrainOutput, local: str, dataset:
                 client.terminate_instances(InstanceIds=[ec2_instance_id], DryRun=False)
             except URLError:
                 click.echo('No EC2 runtime detected.')
-
-
+        else:
+            click.echo('Not checking for EC2 since --no-kill was passed.')
     return result
 
-@train.command()
-def list():
-    """List available training plugins by name.
-    """
-    for entry in iter_entry_points(group='ravenml.plugins.train', name=None):
-        click.echo(entry.name)
-        
 
 ### HELPERS ###
 def _upload_result(result: TrainOutput):

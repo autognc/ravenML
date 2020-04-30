@@ -41,13 +41,13 @@ def get_dataset_metadata(name: str, no_check=False) -> dict:
         dict: dataset metadata
         
     Raises:
-        ValueError: if given dataset name is invalid
+        ValueError: if given dataset name is invalid (re raised)
     """
     if not no_check:
         try:
             _ensure_metadata(name)
-        except ClientError as e:
-            raise ValueError(name) from e
+        except ValueError:
+            raise
     return json.load(open(dataset_cache.path / Path(name) / 'metadata.json'))
 
 def get_dataset(name: str) -> Dataset:
@@ -75,6 +75,9 @@ def _ensure_metadata(name: str):
 
     Args:
         name (str): name of dataset
+        
+    Raises:
+        ValueError: if dataset name is invalid and metadata cannot be downloaded.
     """
     S3 = boto3.resource('s3')
     config = get_config()
@@ -84,7 +87,10 @@ def _ensure_metadata(name: str):
         dataset_cache.ensure_subpath_exists(name)
         metadata_key = f'{name}/metadata.json'
         metadata_absolute_path = dataset_cache.path / metadata_path
-        DATASET_BUCKET.download_file(metadata_key, str(metadata_absolute_path))
+        try:
+            DATASET_BUCKET.download_file(metadata_key, str(metadata_absolute_path))
+        except ClientError as e:
+            raise ValueError(name) from e
 
 def _ensure_dataset(name: str):
     """Ensures dataset exists.
