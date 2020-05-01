@@ -83,25 +83,6 @@ class TrainInput(object):
         self.dataset = cli_spinner(f'Downloading {dataset_name} from S3...', 
             get_dataset, dataset_name)
 
-    def local_mode(self):
-        return self.artifact_path is not None
-
-    # @property
-    # def dataset(self):
-    #     return self._dataset
-        
-    # @dataset.setter
-    # def dataset(self, new_dataset: Dataset):
-    #     self._dataset = new_dataset
-        
-    # @property
-    # def artifact_path(self):
-    #     return self._artifact_path
-        
-    # @artifact_path.setter
-    # def artifact_path(self, new_path: str):
-    #     self._artifact_path = new_path
-
 class TrainOutput(object):
     """Training Output class
 
@@ -119,49 +100,11 @@ class TrainOutput(object):
         extra_files (list): list of Path objects to extra files associated with the training
         local_mode (bool): whether this training was run in local mode or not
     """
-    def __init__(self, metadata: dict, artifact_path: Path, model_path: Path, extra_files: list, local_mode: bool):
-        self._metadata = metadata
-        self._artifact_path = artifact_path
-        self._model_path = model_path
-        self._extra_files = extra_files
-        
-    @property
-    def metadata(self):
-        return self._metadata
-    
-    @metadata.setter
-    def metadata(self, metadata):
-        self._metadata = metadata
-    
-    @property
-    def artifact_path(self):
-        return self._artifact_path
-        
-    @artifact_path.setter
-    def artifact_path(self, new_path):
-        self._artifact_path = new_path
-        
-    @property
-    def model_path(self):
-        return self._model_path
-    
-    @model_path.setter
-    def model_path(self, new_path):
-        self._model_path = new_path
-
-    @property
-    def extra_files(self):
-        return self._extra_files
-    
-    @extra_files.setter
-    def extra_files(self, new_files):
-        self._extra_files = new_files
-    
-    @property
-    def local_mode(self):
-        return self._local_mode
-    
-
+    def __init__(self, metadata: dict, artifact_path: Path, model_path: Path, extra_files: list):
+        self.metadata = metadata
+        self.artifact_path = artifact_path
+        self.model_path = model_path
+        self.extra_files = extra_files
     
 # dictionary of required information for training input
 # and associated prompt logic
