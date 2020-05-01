@@ -18,7 +18,7 @@ kfold_opt = click.option(
     '-k', '--kfold', is_flag=True, help='Perform kfold cross validation training.'
 )
 
-commet_opt = click.option(
+comet_opt = click.option(
     '-c', '--comet', type=str,
     help='Create comet experiment with specified name on this training run.'
 )
@@ -26,11 +26,6 @@ commet_opt = click.option(
 model_name_opt = click.option(
     '-m', '--model-name', type=str,
     help='Name of model to be used for training.'
-)
-
-overwrite_local_opt = click.option(
-    '-o', '--overwrite-local', is_flag=True,
-    help='Overwrite files that may be in path specified.'
 )
 
 optimizer_opt = click.option(

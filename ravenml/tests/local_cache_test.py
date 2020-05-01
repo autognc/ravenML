@@ -24,21 +24,13 @@ ansi_escape = re.compile(r'(\x9B|\x1B\[)[0-?]*[ -/]*[@-~]')
 def setup_module():
     """ Sets up the module for testing.
     """
-    # alter global and dataset cache objects used throughout ravenml for local caching
     global_cache.path = test_dir / Path('.testing')
-    # global_cache.ensure_exists()
-    
-    # copy config file from test data into temporary testing cache
-    # copyfile(test_data_dir / Path('config.yml'), global_cache.path / Path('config.yml'))
 
 def teardown_module():
     """ Tears down the module after testing.
     """
     global_cache.clean()
     
-
-# NOTE: there are no automated tests for prompt behavior of commands, as prompt-toolkit
-# does not deal nicley with stdin not being an actual terminal (as pytest does it)
 
 ### TESTS ###
 def test_no_leaky_cache_creation():

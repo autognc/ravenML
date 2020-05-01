@@ -10,7 +10,6 @@ from pathlib import Path
 from colorama import init, Fore
 from ravenml.utils.question import user_input, user_confirms
 from ravenml.utils.config import CONFIG_FIELDS, get_config, update_config
-from ravenml.utils.local_cache import global_cache
 from ravenml.options import no_user_opt
 
 init()

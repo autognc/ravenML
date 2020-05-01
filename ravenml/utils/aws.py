@@ -4,7 +4,7 @@ import boto3
 import json
 from pathlib import Path
 from ravenml.utils.config import get_config
-from ravenml.utils.local_cache import LocalCache
+from ravenml.utils.local_cache import RMLCache
 
 ### DOWNLOAD FUNCTIONS ###
 def list_bucket_prefixes(bucket_name: str):
@@ -17,13 +17,13 @@ def list_bucket_prefixes(bucket_name: str):
             contents.append(obj.get('Prefix')[:-1])
     return contents
     
-def download_prefix(bucket_name: str, prefix: str, cache: LocalCache):
+def download_prefix(bucket_name: str, prefix: str, cache: RMLCache):
     """Downloads all files with the specified prefix into the provided local cache.
 
     Args:
         bucket_name (str): name of bucket
         prefix (str): prefix to filter on
-        cache (LocalCache): cache to download files to
+        cache (RMLCache): cache to download files to
     
     Returns:
         bool: T if successful, F if no objects found

@@ -34,6 +34,11 @@ local_opt = click.option(
     help='Do not upload to S3 and instead save artifacts to the provided filepath.'
 )
 
+overwrite_local_opt = click.option(
+    '-o', '--overwrite', is_flag=True,
+    help='Overwrite existing files at artifact path in --local without prompting.'
+)
+
 ec2_kill_opt = click.option(
     '--no-kill', 'no_kill', is_flag=True,
     help='Do not kill EC2 instance ravenML is running on after training. Ignored if not on EC2.'
@@ -45,8 +50,9 @@ ec2_kill_opt = click.option(
 @click.pass_context
 @ec2_kill_opt
 @dataset_opt
+@overwrite_local_opt
 @local_opt
-def train(ctx: click.Context, local: str, dataset: str, no_kill: bool):
+def train(ctx: click.Context, local: str, overwrite: bool, dataset: str, no_kill: bool):
     """ Training command group.
     
     Args:
@@ -66,11 +72,12 @@ def train(ctx: click.Context, local: str, dataset: str, no_kill: bool):
     #       subcommands such as help.
     #   2.  User DID provide arguments to this command and thus is kicking off
     #       a training, therefore NOT calling any other plugin subcommand. This means
-    #       it is ok (and necessary_ to create a TrainInput in this command, as we know
-    #       for sure which plugin subcommand is coming next.
+    #       it is ok (and necessary) to create a TrainInput in this command, as we know
+    #       for sure which plugin subcommand is coming next.o
     if dataset or local:
         try:
-            ti = TrainInput(dataset_name=dataset, artifact_path=local)
+            ti = TrainInput(dataset_name=dataset, artifact_path=local, 
+                overwrite=overwrite, cache_name=ctx.invoked_subcommand)
             # assign to context for use in plugin
             ctx.obj = ti
         except ValueError as e:
@@ -80,7 +87,7 @@ def train(ctx: click.Context, local: str, dataset: str, no_kill: bool):
 @train.resultcallback()
 @click.pass_context
 # def process_result(ctx: click.Context, result: TrainOutput, local: str, dataset: str):
-def process_result(ctx: click.Context, result: TrainOutput, local: str, dataset: str,  no_kill: bool):
+def process_result(ctx: click.Context, result: TrainOutput, local: str, overwrite: bool, dataset: str,  no_kill: bool):
     """Processes the result of a training by analyzing the given TrainOutput object.
     This callback is called after ANY command originating from the train command 
     group, hence the check for commands other than training plugins.
@@ -95,7 +102,7 @@ def process_result(ctx: click.Context, result: TrainOutput, local: str, dataset:
     # need to consider issues with this being called on every call to train
     if result is not None:
         # upload if not in local mode
-        if not result.local_mode:
+        if not local:
             uuid = cli_spinner('Uploading artifacts...', _upload_result, result)
             click.echo(f'Artifact UUID: {uuid}')
         else:

@@ -34,7 +34,7 @@ def setup_module():
     global_cache.ensure_exists()
     dataset_cache.path = global_cache.path / Path('datasets')
     
-    # copy config file from test data into temporary testing cache
+    # copy config file from test data into temporary testing_cache
     copyfile(test_data_dir / Path('config.yml'), global_cache.path / Path('config.yml'))
 
     config = get_config()

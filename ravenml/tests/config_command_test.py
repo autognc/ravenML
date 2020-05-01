@@ -13,7 +13,7 @@ from shutil import copyfile
 from click.testing import CliRunner
 from ravenml.config.commands import config, show, update
 from ravenml.cli import clean
-from ravenml.utils.local_cache import global_cache, RAVENML_LOCAL_STORAGE_PATH
+from ravenml.utils.local_cache import global_cache
 from ravenml.utils.dataset import dataset_cache
 from ravenml.utils.config import get_config, update_config
 
@@ -29,7 +29,6 @@ def setup_module():
     # alter global and dataset cache objects used throughout ravenml for local caching
     global_cache.path = test_dir / Path('.testing')
     global_cache.ensure_exists()
-    dataset_cache.path = global_cache.path / Path('datasets')
     
     # copy config file from test data into temporary testing cache
     copyfile(test_data_dir / Path('config.yml'), global_cache.path / Path('config.yml'))

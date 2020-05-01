@@ -10,12 +10,11 @@ import json
 import boto3
 from botocore.exceptions import ClientError
 from pathlib import Path
-from ravenml.utils.local_cache import LocalCache, global_cache
+from ravenml.utils.local_cache import RMLCache
 from ravenml.utils.config import get_config
 from ravenml.utils.aws import list_bucket_prefixes
 
-# LocalCache within local cache for imagesets
-imageset_cache = LocalCache(path=global_cache.path / Path('imagesets'))
+imageset_cache = RMLCache('imagesets')
 # name of config field
 BUCKET_FIELD = 'image_bucket_name'
 
