@@ -70,27 +70,15 @@ def train(ctx: click.Context, config: str):
         dataset (str): dataset name. None if not in no-user mode
         no_kill (bool): whether to kill EC2 instance after training
     """
-    ## NOTE: ##
-    # All plugins require a TrainInput object to begin training. ravenML 
-    # guarantees this in two ways for two different cases:
-    #   1.  User did NOT provide any arguments to this command and thus 
-    #       must be prompted for dataset name. TrainInput object is created 
-    #       automatically by pass_train decorator in plugin since it does not need to
-    #       receive any information from this command. Therefore, NO action is taken
-    #       so that this command does not do anything for calls to other plugin 
-    #       subcommands such as help.
-    #   2.  User DID provide arguments to this command and thus is kicking off
-    #       a training, therefore NOT calling any other plugin subcommand. This means
-    #       it is ok (and necessary) to create a TrainInput in this command, as we know
-    #       for sure which plugin subcommand is coming next.o
+    # check if config flag was passed, if simply carry on to child command
     if config:
+        # load config
         try:
             with open(Path(config), 'r') as stream:
                 config = yaml.safe_load(stream)
         except Exception as e:
             hint = 'config, no such file exists'
             raise click.exceptions.BadParameter(config, ctx=ctx, param=config, param_hint=hint)
-
         ctx.obj = TrainInput(config, ctx.invoked_subcommand)
 
     # if dataset or local:
@@ -125,6 +113,7 @@ def process_result(ctx: click.Context, ti: TrainInput, result: TrainOutput, conf
             uuid = cli_spinner('Uploading artifacts...', _upload_result, result)
             click.echo(f'Artifact UUID: {uuid}')
         else:
+            print(ti.metadata)
             click.echo(f'LOCAL MODE: Not uploading model to S3. Model is located at: {result.artifact_path}')
             
         # kill if on ec2

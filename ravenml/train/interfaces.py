@@ -22,32 +22,34 @@ class TrainInput(object):
     necessary for training. Plugins can define their own behavior for getting
     additional information.
 
-    Kwargs:
-        dataset_name (str, optional): name of dataset stored on S3 to use.
-            Defaults to None, in which case user is prompted.
-        artifact_path (str, optional): local filepath to save artifacts. 
-            Defaults to None to direct S3 upload.
+    Args:
+        config (dict): training config dict
+        cache_name (str): name of subcache inside ravenML cache to use.
+            Should be the name of the plugin command (i.e, tf-bbox, etc)
 
     Attributes:
-        dataset (Dataset): Dataset in use
-        artifact_path (Path): path to save artifacts. None if uploading to s3
         plugin_cache (RMLCache): RMLCache for this plugin. Created at 
             ~/.ravenML/<plugin command>.
-        config (dict)
+        artifact_path (Path): path to save artifacts. Points to temp/ inside
+            the root of plugin_cache if uploading to S3, otherwise points
+            to user defined local path.
+        dataset (Dataset): Dataset object for this training run.
+        metadata (dict): dictionary of metadata about this training.
+            Automatically populated with common data, plugins add more.
+        config (dict): full training config dict 
+        plugin_config (dict): plugin section of config dict for plugin to use
     """
-    
-   
-    def __init__(self):
-        """ Default constructor for use with @pass_train pass decorator
-        Automatically called when a command decorated with @pass_train is
-        triggered and not TrainInput exists in ctx.obj. This means the user
+    def __init__(self, config:dict=None, cache_name:str=None):
+        """ Default args given for use with @pass_train pass decorator.
+        Constructor is called with no args when a command decorated with @pass_train is
+        triggered and no TrainInput exists in ctx.obj. This occurs when the user
         did not provide a config in the --config option.
         """
-        raise click.exceptions.UsageError(('You must provide the --config option'
-            'on `ravenml train` when using this plugin command.'))
+        if config is None or cache_name is None:
+            raise click.exceptions.UsageError(('You must provide the --config option'
+                'on `ravenml train` when using this plugin command.'))
 
-    def __init__(self, config: dict, cache_name:str):
-        ## Set up Local Cache ##
+        ## Set up Local Cache
         self.plugin_cache = RMLCache(cache_name)
         
         ## Set up Artifact Path
@@ -57,9 +59,9 @@ class TrainInput(object):
             self.plugin_cache.ensure_subpath_exists('temp')
             self.artifact_path = Path(self.plugin_cache.path / 'temp')
         else:
-            ap = Path(artifact_path)
+            ap = Path(os.path.expanduser(ap))
             # check if local path contains data
-            if os.path.exists() and os.path.isdir(ap) and len(os.listdir(ap)) > 0:
+            if os.path.exists(ap) and os.path.isdir(ap) and len(os.listdir(ap)) > 0:
                 if config.get('overwrite_local') or user_confirms('Local artifact storage location contains old data. Overwrite?'):
                     shutil.rmtree(ap)
                 else:
@@ -67,10 +69,11 @@ class TrainInput(object):
                     click.get_current_context().exit() 
             # create directory, need exist_ok since we only delete
             # if directory contains files
+            # TODO: protect against paths to actual files
             os.makedirs(ap, exist_ok=True)
             self.artifact_path = ap
         
-        ## Set up Dataset ##
+        ## Set up Dataset
         # prompt for dataset if not provided
         dataset_name = config.get('dataset')
         if dataset_name is None:
@@ -84,7 +87,7 @@ class TrainInput(object):
             hint = 'dataset name, no such dataset exists on S3'
             raise click.exceptions.BadParameter(dataset_name, param=dataset_name, param_hint=hint)
     
-        ## Set up Basic Metadata ##
+        ## Set up Basic Metadata
         # TODO: add environment description, git hash, etc
         self.metadata = config.get('metadata', {})
         # handle user defined metadata fields
@@ -96,57 +99,14 @@ class TrainInput(object):
         # handle automatic metadata fields
         self.metadata['date_started_at'] = datetime.utcnow().isoformat() + "Z"
         self.metadata['dataset_used'] = self.dataset.metadata
-            
-    
-    ## NOTE: ##
-    # Constructor uses only kwargs to make it compatible for use with
-    # a Click pass decorator with ensure=True, which requires a default 
-    # constructor with no positional arguments. 
-    # The pass decorator with ensure=True is what allows 
-    # creation of a TrainInput directly in the ravenml train command
-    # ONLY when arguments are passed, which allows --help and other plugin
-    # subcommands to be unaffected by TrainInput construction when a training
-    # is not actually being started.
-    # def __init__(self, dataset_name=None, artifact_path=None, overwrite=False, cache_name=None):
-    #     ## Set up Local Cache ##
-    #     # cache name is None when __init__ called by pass decorator, so get plugin name via context
-    #     if cache_name is None:
-    #         self.plugin_cache = RMLCache(click.get_current_context().command_path.split(' ')[2]) 
-    #     else:
-    #         self.plugin_cache = RMLCache(cache_name)
+        # set up plugin metadata area
+        self.metadata[cache_name] = {}
         
-    #     ## Set up Artifact Path ##
-    #     # path is None for s3 upload (no local flag passed)
-    #     if artifact_path is None:
-    #         # clear temp dir in case already exists
-    #         self.plugin_cache.ensure_clean_subpath('temp')
-    #         # create temp dir in local cache for artifacts
-    #         self.plugin_cache.ensure_subpath_exists('temp')
-    #         self.artifact_path = Path(self.plugin_cache.path / 'temp')
-    #     else:
-    #         # convert to Path object
-    #         ap = Path(artifact_path)
-    #         # check if local path contains data
-    #         if os.path.exists(ap) and os.path.isdir(ap) and len(os.listdir(ap)) > 0:
-    #             if overwrite or user_confirms('Artifact storage location contains old data. Overwrite?'):
-    #                 shutil.rmtree(ap)
-    #             else:
-    #                 click.echo(Fore.RED + 'Training cancelled.')
-    #                 click.get_current_context().exit() 
-    #         # create directory, need exist_ok since we only delete
-    #         # if the directory contains files
-    #         os.makedirs(ap, exist_ok=True)
-    #         self.artifact_path = ap
+        # provide config to plugin
+        self.config = config
+        self.plugin_config = config.get('plugin')
+        self.plugin_metadata = self.metadata[cache_name]
             
-    #     ## Set up Dataset ##
-    #     # prompt for dataset if not provided
-    #     if dataset_name is None:
-    #         dataset_options = cli_spinner('Finding datasets on S3...', get_dataset_names)
-    #         dataset_name = user_selects('Choose dataset:', dataset_options)
-    #     # download dataset and populate field
-    #     self.dataset = cli_spinner(f'Downloading {dataset_name} from S3...', 
-    #         get_dataset, dataset_name)
-
 class TrainOutput(object):
     """Training Output class
 
@@ -170,13 +130,3 @@ class TrainOutput(object):
         self.model_path = model_path
         self.extra_files = extra_files
     
-# dictionary of required information for training input
-# and associated prompt logic
-# input_dict = {
-#     'dataset': self._prompt_dataset(),
-# }
-
-# # iterate over required kwargs and prompt if any are not found
-# for field in input_dict.keys():
-#     if field not in kwargs.keys():
-#         input_dict[field]()

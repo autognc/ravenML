@@ -34,7 +34,7 @@ def fill_basic_training_metadata(metadata: dict, dataset: Dataset, author=None, 
     metadata['dataset_used'] = dataset.metadata
     # TODO: add git commit/package version and other env data
 
-def raise_option_error(option, hint: str):
+def raise_parameter_error(option, hint: str):
     raise click.exceptions.BadParameter(option, param=option, param_hint=hint)
 
 # def fill_basic_metadata(metadata: dict, dataset: Dataset, ):

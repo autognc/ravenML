@@ -1,0 +1,14 @@
+dataset: click_test
+# overwrite_local: True
+artifact_path: '~/Desktop/test'
+# ec2_kill: True
+metadata:
+    created_by: Carson Schubert
+    comments: hehe no
+plugin:
+    verbose: true
+    comet: false
+    model: ssd_mobilenet_v2_coco
+    optimizer: RMSProp
+    use_default_config: false
+    
