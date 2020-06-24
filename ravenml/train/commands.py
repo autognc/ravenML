@@ -70,26 +70,16 @@ def train(ctx: click.Context, config: str):
         dataset (str): dataset name. None if not in no-user mode
         no_kill (bool): whether to kill EC2 instance after training
     """
-    # check if config flag was passed, if simply carry on to child command
+    # check if config flag was passed, if not simply carry on to child command
     if config:
         # load config
         try:
             with open(Path(config), 'r') as stream:
-                config = yaml.safe_load(stream)
+                train_config = yaml.safe_load(stream)
         except Exception as e:
             hint = 'config, no such file exists'
             raise click.exceptions.BadParameter(config, ctx=ctx, param=config, param_hint=hint)
-        ctx.obj = TrainInput(config, ctx.invoked_subcommand)
-
-    # if dataset or local:
-    #     try:
-    #         ti = TrainInput(dataset_name=dataset, artifact_path=local, 
-    #             overwrite=overwrite, cache_name=ctx.invoked_subcommand)
-    #         # assign to context for use in plugin
-    #         ctx.obj = ti
-    #     except ValueError as e:
-    #         hint = 'dataset name, no such dataset exists on S3:'
-    #         raise click.exceptions.BadParameter(dataset, ctx=ctx, param=dataset, param_hint=hint)
+        ctx.obj = TrainInput(train_config, ctx.invoked_subcommand)
 
 @train.resultcallback()
 @pass_train

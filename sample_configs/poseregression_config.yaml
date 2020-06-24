@@ -1,0 +1,26 @@
+dataset: click_test
+overwrite_local: True
+artifact_path: '~/Desktop/test'
+# ec2_kill: True
+metadata:
+    created_by: Carson Schubert
+    comments: no thanks
+plugin:
+    dropout: 0.5
+    batch_size: 5
+    phases: 
+        - optimizer: RMSProp
+          optimizer_args:
+            learning_rate: 0.0045
+          epochs: 1
+          start_layer: regression_head
+        - optimizer: RMSProp
+          optimizer_args:
+            learning_rate: 0.0045
+          epochs: 1
+          start_layer: block_16_expand
+    regression_head: 
+        - 512
+    shuffle_buffer: 1
+    crop_size: 224
+      

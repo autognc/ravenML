@@ -1,4 +1,4 @@
-dataset: click_test
+dataset: carson_instance_tester
 overwrite_local: True
 artifact_path: '~/Desktop/test'
 # ec2_kill: True
@@ -8,7 +8,8 @@ metadata:
 plugin:
     verbose: true
     comet: false
-    model: ssd_mobilenet_v2_coco
-    optimizer: RMSProp
+    model: mask_rcnn_inception_v2_coco # only one supported rn
+    optimizer: Momentum # only one supported rn
     use_default_config: false
+    no_validate: true
     

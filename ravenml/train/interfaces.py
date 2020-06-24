@@ -50,6 +50,7 @@ class TrainInput(object):
                 'on `ravenml train` when using this plugin command.'))
 
         ## Set up Local Cache
+        # TODO: maybe create the subdir here?
         self.plugin_cache = RMLCache(cache_name)
         
         ## Set up Artifact Path
@@ -105,7 +106,7 @@ class TrainInput(object):
         # provide config to plugin
         self.config = config
         self.plugin_config = config.get('plugin')
-        self.plugin_metadata = self.metadata[cache_name]
+        self.plugin_metadata_field = cache_name
             
 class TrainOutput(object):
     """Training Output class
