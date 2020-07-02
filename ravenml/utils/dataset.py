@@ -12,29 +12,29 @@ from botocore.exceptions import ClientError
 from pathlib import Path
 from ravenml.utils.local_cache import RMLCache
 from ravenml.utils.config import get_config
-from ravenml.utils.aws import list_bucket_prefixes, download_prefix
+from ravenml.utils.aws import list_top_level_bucket_prefixes, download_prefix
 from ravenml.data.interfaces import Dataset
 
 dataset_cache = RMLCache('datasets')
-# name of config field
+# name of dataset bucket field inside config dict
 BUCKET_FIELD = 'dataset_bucket_name'
 
 ### PUBLIC METHODS ###
 def get_dataset_names() -> list:
-    """Retrieves the names of all available datasets.
+    """Retrieves the names of all available datasets in bucket pointed to by global config.
 
     Returns:
         list: dataset names
     """
     config = get_config()
-    return list_bucket_prefixes(config[BUCKET_FIELD])
+    return list_top_level_bucket_prefixes(config[BUCKET_FIELD])
 
 def get_dataset_metadata(name: str, no_check=False) -> dict:
     """Retrieves dataset metadata. Downloads from S3 if necessary.
 
     Args:
-        name: string name of dataset
-        no_check: whether to verify metadata existence
+        name (str): string name of dataset
+        no_check (bool, optional): whether to verify metadata existence
 
     Returns:
         dict: dataset metadata

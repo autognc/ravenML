@@ -70,16 +70,3 @@ class RMLCache(object):
         except FileNotFoundError:
             return False
     
-# importable global cache, should be used wherever possible to ensure
-# that the testing code works (where we need to remap the global cache
-# to a testing cache)
-#
-# If a module is creating a sub-cache they can use this syntax no problem:
-#   from ravenml.utils.local_cache import RMLCache
-#   dataset_cache = RMLCache('datasets')
-#
-# However if a module is going to directly use the global cache they should
-# instead import this global cache
-#
-global_cache = RMLCache()
-

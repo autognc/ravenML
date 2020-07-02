@@ -1,4 +1,3 @@
-import sys
 import os
 import boto3
 import json
@@ -7,7 +6,19 @@ from ravenml.utils.config import get_config
 from ravenml.utils.local_cache import RMLCache
 
 ### DOWNLOAD FUNCTIONS ###
-def list_bucket_prefixes(bucket_name: str):
+def list_top_level_bucket_prefixes(bucket_name: str):
+    """Lists all top level prefixes in an S3 bucket.
+    
+    A top level prefix means it is the first in the chain. This will not list
+    any subprefixes. 
+    Ex: Bucket contains an element a/b/c/d.json, this function will only list a.
+    
+    Args:
+        bucket_name (str): name of S3 bucket
+        
+    Returns:
+        list: prefix strings
+    """
     S3 = boto3.resource('s3')
     config = get_config()
     bucket_contents = S3.meta.client.list_objects(Bucket=bucket_name, Delimiter='/')

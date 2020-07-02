@@ -10,5 +10,8 @@ plugin:
     comet: false
     model: ssd_mobilenet_v2_coco
     optimizer: RMSProp
-    use_default_config: false
+    # NOTE: if use_default_config is true, hyperparameters are IGNORED
+    use_default_config: true
+    hyperparameters:
+        train_steps: 1000
     

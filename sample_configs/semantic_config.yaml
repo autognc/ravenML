@@ -15,8 +15,8 @@ plugin:
     - train_crop_size: 721,961
     - train_batch_size: 1
     - fine_tune_batch_norm: True
-    # requires absolute path
-    - tf_initial_checkpoint: deeplabv3_mnv2_dm05_pascal_trainaug/model.ckpt
+    # requires full filepath - ~ is NOT converted
+    - tf_initial_checkpoint: /home/carson/tsl/pipeline/ravenML-train-plugins/rmltraintfsemantic/deeplabv3_mnv2_dm05_pascal_trainaug/model.ckpt
     - depth_multiplier: 0.5
     - save_summaries_images: True
     - save_summaries_secs: 20

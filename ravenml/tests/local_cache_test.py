@@ -13,24 +13,25 @@ import re
 from pathlib import Path
 from click.testing import CliRunner
 from ravenml.cli import cli
-from ravenml.utils.local_cache import global_cache
+from ravenml.utils.local_cache import RMLCache
 
 ### SETUP ###
 runner = CliRunner()
-test_dir = os.path.dirname(__file__)
+test_dir = Path(os.path.dirname(__file__))
 test_data_dir = test_dir / Path('data')
 ansi_escape = re.compile(r'(\x9B|\x1B\[)[0-?]*[ -/]*[@-~]')
+test_cache = RMLCache()
 
 def setup_module():
     """ Sets up the module for testing.
     """
-    global_cache.path = test_dir / Path('.testing')
+    test_cache.path = test_dir / '.testing'
 
 def teardown_module():
     """ Tears down the module after testing.
     """
-    global_cache.clean()
-    
+    test_cache.clean()
+
 
 ### TESTS ###
 def test_no_leaky_cache_creation():
@@ -40,4 +41,4 @@ def test_no_leaky_cache_creation():
     """
     result = runner.invoke(cli)
     assert result.exit_code == 0
-    assert not os.path.exists(global_cache.path)
+    assert not os.path.exists(test_cache.path)

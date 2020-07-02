@@ -15,27 +15,30 @@ from shutil import copyfile
 from click.testing import CliRunner
 from ravenml.data.commands import list_datasets, inspect_dataset
 from ravenml.utils.config import get_config
-from ravenml.utils.local_cache import global_cache
+from ravenml.utils.local_cache import RMLCache
 from ravenml.utils.dataset import dataset_cache
 
 ### SETUP ###
 mock = mock_s3()
 runner = CliRunner()
-test_dir = os.path.dirname(__file__)
+test_dir = Path(os.path.dirname(__file__))
 test_data_dir = test_dir / Path('data')
+test_cache = RMLCache()
 
 def setup_module():
     """ Sets up the module for testing.
     """
     mock.start()
     
-    # alter global and dataset cache objects used throughout ravenml for local caching
-    global_cache.path = test_dir / Path('.testing')
-    global_cache.ensure_exists()
-    dataset_cache.path = global_cache.path / Path('datasets')
+    # set up test cache and alter the dataset module's cache to point to the test cache
+    # must ensure exists so we can copy the config.yml into it
+    test_cache.path = test_dir / '.testing'
+    test_cache.ensure_exists()
+    dataset_cache.path = test_cache.path / Path('datasets')
     
     # copy config file from test data into temporary testing_cache
-    copyfile(test_data_dir / Path('config.yml'), global_cache.path / Path('config.yml'))
+    # copyfile(test_data_dir / Path('config.yml'), global_cache.path / Path('config.yml'))
+    copyfile(test_data_dir / Path('config.yml'), test_cache.path / Path('config.yml'))
 
     config = get_config()
     S3 = boto3.resource('s3', region_name='us-east-1')
@@ -48,7 +51,7 @@ def setup_module():
 def teardown_module():
     """ Tears down the module after testing.
     """
-    global_cache.clean()
+    test_cache.clean()
     mock.stop()    
     
     

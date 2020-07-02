@@ -8,7 +8,9 @@ Utility module for managing ravenml's configuration.
 import yaml
 from copy import deepcopy
 from pathlib import Path
-from ravenml.utils.local_cache import global_cache
+from ravenml.utils.local_cache import RMLCache
+
+config_cache = RMLCache()
 
 # required configuration fields
 CONFIG_FIELDS = sorted(['image_bucket_name', 'dataset_bucket_name', 'model_bucket_name'])
@@ -24,8 +26,8 @@ def get_config() -> dict:
         FileNotFoundError: If a configuration file is not found.
     """
     config = {}
-    if global_cache.subpath_exists('config.yml'):
-        with open(global_cache.path / Path('config.yml'), 'r') as stream:
+    if config_cache.subpath_exists('config.yml'):
+        with open(config_cache.path / Path('config.yml'), 'r') as stream:
             try:
                 config = yaml.safe_load(stream)
             except yaml.YAMLError as exc:
@@ -49,6 +51,6 @@ def update_config(config: dict):
         config (dict): new configuration as a dict
     """
     # ensure our output location actually exists
-    global_cache.ensure_exists()
-    with open(global_cache.path / Path('config.yml'), 'w') as outfile:
+    config_cache.ensure_exists()
+    with open(config_cache.path / Path('config.yml'), 'w') as outfile:
         yaml.dump(config, outfile, default_flow_style=False)

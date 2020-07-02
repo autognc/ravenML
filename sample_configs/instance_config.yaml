@@ -1,15 +1,18 @@
 dataset: carson_instance_tester
 overwrite_local: True
 artifact_path: '~/Desktop/test'
-# ec2_kill: True
+ec2_no_kill: False
 metadata:
     created_by: Carson Schubert
     comments: no thanks
 plugin:
     verbose: true
     comet: false
-    model: mask_rcnn_inception_v2_coco # only one supported rn
-    optimizer: Momentum # only one supported rn
+    model: mask_rcnn_inception_v2_coco  # only one supported rn
+    optimizer: Momentum                 # only one supported rn
+    no_validate: true                   # do not perform validation after training
+    # NOTE: if use_default_config is true, hyperparameters are IGNORED
     use_default_config: false
-    no_validate: true
+    hyperparameters:
+        train_steps: 50
     
