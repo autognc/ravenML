@@ -11,11 +11,13 @@ import re
 from pathlib import Path
 from shutil import copyfile
 from click.testing import CliRunner
-from ravenml.config.commands import config, show, update
+from ravenml.config.commands import config as config_cmd_group
 from ravenml.cli import clean
 from ravenml.utils.local_cache import RMLCache
 from ravenml.utils.dataset import dataset_cache
 from ravenml.utils.config import get_config, update_config, config_cache
+
+# TODO: add tests for invalid config and missing config with show command
 
 ### SETUP ###
 runner = CliRunner()
@@ -48,17 +50,17 @@ def teardown_module():
 def test_show():
     """ Tests the show subcommand.
     """
-    result = runner.invoke(show)
+    result = runner.invoke(config_cmd_group, ['show'])
     assert result.exit_code == 0
     with open(test_data_dir / Path('config_output.txt'), 'r') as myfile:
         data = myfile.read()
     sub = ansi_escape.sub('', result.output)
     assert sub == data
 
-def test_update():
-    """Tests the update subcommand in no user mode.
+def test_update_existing_config_with_options():
+    """Tests the update subcommand with options.
     """
-    result = runner.invoke(update, ['--no-user', '-d', 'test_data_buck', '-m', 'test_art_buck', '-i', 'test_img_buck'])
+    result = runner.invoke(config_cmd_group, ['update', '-d', 'test_data_buck', '-m', 'test_art_buck', '-i', 'test_img_buck'])
     assert result.exit_code == 0
     with open(test_data_dir / Path('config_update_contents.txt'), 'r') as myfile:
         data = myfile.read()
@@ -66,13 +68,13 @@ def test_update():
         config_contents = myfile.read()
     assert config_contents == data
     
-def test_update_no_config():
+def test_update_no_existing_config_with_options():
     """Basically the same as test_update, except we clean the existing configuration
-    file away before calling it. Ensures the command properly deals with this scanario.
+    file away before calling it. Ensures the command properly creates a new config file.
     """
     conf = get_config()
     test_cache.clean()
-    result = runner.invoke(config, ['update', '--no-user', '-d', 'test_data_buck', '-m', 'test_art_buck', '-i', 'test_img_buck'])
+    result = runner.invoke(config_cmd_group, ['update', '-d', 'test_data_buck', '-m', 'test_art_buck', '-i', 'test_img_buck'])
     assert result.exit_code == 0
     with open(test_data_dir / Path('config_update_contents.txt'), 'r') as myfile:
         data = myfile.read()
