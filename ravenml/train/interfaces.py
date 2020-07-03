@@ -124,7 +124,7 @@ class TrainInput(object):
         ## Set up fields for plugin use
         # NOTE: plugins should overwrite the architecture field to something
         # more specific/useful since it is used to name the final uploaded model
-        self.metadata[cache_name] = {'architecture': plugin_name}
+        self.metadata[plugin_name] = {'architecture': plugin_name}
         # plugins should only ACCESS the plugin_metadata attibute and add items. They should
         # NEVER assign to the attribute as it will break the reference to the overall metadata dict
         self.plugin_metadata = self.metadata[plugin_name]

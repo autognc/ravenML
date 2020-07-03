@@ -77,7 +77,8 @@ def process_result(ctx: click.Context, ti: TrainInput, result: TrainOutput, conf
             uuid = cli_spinner('Uploading artifacts...', _upload_result, result, ti.metadata)
             click.echo(f'Artifact UUID: {uuid}')
         else:
-            print(ti.metadata)
+            with open(ti.artifact_path / 'metadata.json', 'w') as f:
+                json.dump(ti.metadata, f, indent=2)
             click.echo(f'LOCAL MODE: Not uploading model to S3. Model is located at: {ti.artifact_path}')
             
         # kill if on ec2 unless user has explicitly said not to

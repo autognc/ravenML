@@ -10,56 +10,9 @@ from datetime import datetime
 from ravenml.data.interfaces import Dataset
 from ravenml.utils.question import user_input
 
-def fill_basic_training_metadata(metadata: dict, dataset: Dataset, author=None, comments=None):
-    """Adds basic metadata to the provided dictionary with user input
-    and dataset fields.
-    
-    Metadata added:
-        created_by (prompted): name of user performing the training
-        comments (prompted); user comments about the training
-        date_started_at: timestamp in ISO time
-        dataset_used: dataset used for this training
-
-    Args:
-        metadata (dict): metadata dictionary object
-        dataset (Dataset): training dataset
-    
-    Example:
-        >>> metadata = {}
-        >>> fill_basic_metadata(metadata, dataset)
-    """
-    metadata['created_by'] = author if author else user_input('Please enter your first and last name:')
-    metadata['comments'] = comments if comments else user_input('Please enter any comments about this training:')
-    metadata['date_started_at'] = datetime.utcnow().isoformat() + "Z"
-    metadata['dataset_used'] = dataset.metadata
-    # TODO: add git commit/package version and other env data
-
 def raise_parameter_error(option, hint: str):
     raise click.exceptions.BadParameter(option, param=option, param_hint=hint)
 
-# def fill_basic_metadata(metadata: dict, dataset: Dataset, ):
-#     """Adds basic metadata to the provided dictionary with user input
-#     and dataset fields.
-    
-#     Metadata added:
-#         created_by (prompted): name of user performing the training
-#         comments (prompted); user comments about the training
-#         date_started_at: timestamp in ISO time
-#         dataset_used: dataset used for this training
-
-#     Args:
-#         metadata (dict): metadata dictionary object
-#         dataset (Dataset): training dataset
-    
-#     Example:
-#         >>> metadata = {}
-#         >>> fill_basic_metadata(metadata, dataset)
-#     """
-#     metadata['created_by'] = user_input('Please enter your first and last name:')
-#     metadata['comments'] = user_input('Please enter any comments about this training:')
-#     metadata['date_started_at'] = datetime.utcnow().isoformat() + "Z"
-#     metadata['dataset_used'] = dataset.metadata
-    
 ### DYNAMIC IMPORT FUNCTION ###
 # NOTE: this function should be used in all plugins, but the function is NOT
 # importable because of the use of globals(). You must copy the code.
