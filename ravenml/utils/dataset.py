@@ -5,7 +5,6 @@ Date Created:   03/13/2019
 Utility module for managing Jigsaw created datasets.
 """
 
-import os
 import json
 import boto3
 from botocore.exceptions import ClientError

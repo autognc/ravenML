@@ -5,7 +5,6 @@ Date Created:   03/13/2019
 Utility module for managing Jigsaw created datasets.
 """
 
-import os
 import json
 import boto3
 from pathlib import Path
@@ -123,20 +122,6 @@ def _ensure_metadata(name: str):
 #     Raises:
 #         ValueError: if dataset name is invalid (no matching objects in S3 bucket)
 #     """
-#     S3 = boto3.resource('s3')
-#     config = get_config()
-#     DATASET_BUCKET = S3.Bucket(config['dataset_bucket_name'])
-#     # filter bucket contents by prefix (add / to avoid accidental matching of invalid substrings
-#     # of valid dataset names)
-#     i = 0
-#     for obj in DATASET_BUCKET.objects.filter(Prefix = name + '/'):
-#         # check to be sure object is not a folder by peeking at its last character
-#         i+=1
-#         if obj.key[-1] != '/':
-#             if not dataset_cache.subpath_exists(obj.key):
-#                 subpath = os.path.dirname(obj.key)
-#                 dataset_cache.ensure_subpath_exists(subpath)
-#                 storage_path = dataset_cache.path / Path(obj.key)
-#                 DATASET_BUCKET.download_file(obj.key, str(storage_path))
-#     if i == 0:
-#         raise ValueError(name)
+    # config = get_config()
+    # if not download_prefix(config[BUCKET_FIELD], name, dataset_cache):
+    #     raise ValueError(name)
