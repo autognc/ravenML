@@ -16,7 +16,6 @@ from pathlib import Path
 from pkg_resources import iter_entry_points
 from click_plugins import with_plugins
 from ravenml.train.interfaces import TrainInput, TrainOutput
-from ravenml.train.options import pass_train
 from ravenml.utils.question import cli_spinner
 from ravenml.utils.aws import upload_file_to_s3, upload_dict_to_s3_as_json
 
@@ -53,9 +52,8 @@ def train(ctx: click.Context, config: str):
         ctx.obj = TrainInput(train_config, ctx.invoked_subcommand)
 
 @train.resultcallback()
-@pass_train
 @click.pass_context
-def process_result(ctx: click.Context, ti: TrainInput, result: TrainOutput, config: str):
+def process_result(ctx: click.Context, result: TrainOutput, config: str):
     """Processes the result of a training by analyzing the given TrainOutput object.
     This callback is called after ANY command originating from the train command 
     group, hence the check to see if a result was actually returned - plugins
@@ -72,6 +70,12 @@ def process_result(ctx: click.Context, ti: TrainInput, result: TrainOutput, conf
             callbacks accept the options from the original command.
     """
     if result is not None:
+        # only plugin training commands that return a TrainOutput will activate this block
+        # thus ctx.obj will always be a TrainInput object
+        # NOTE: you cannot use the @pass_train decorator on process_result, otherwise on
+        # non-training plugin commands, the TrainInput __init__ will be called by Click
+        # when process_result runs and no TrainInput is at ctx.obj
+        ti = ctx.obj    
         # upload if not in local mode, determined by user defined artifact_path field in config
         if not ti.config.get('artifact_path'):
             uuid = cli_spinner('Uploading artifacts...', _upload_result, result, ti.metadata)
@@ -81,21 +85,29 @@ def process_result(ctx: click.Context, ti: TrainInput, result: TrainOutput, conf
                 json.dump(ti.metadata, f, indent=2)
             click.echo(f'LOCAL MODE: Not uploading model to S3. Model is located at: {ti.artifact_path}')
             
-        # kill if on ec2 unless user has explicitly said not to
-        # NOTE: users may run in local mode on EC2. Do not fall into the trap of trying
-        # to use the artifact_path field in the config to determine if running on EC2 or not.
-        if not ti.config.get('ec2_no_kill'):
-            click.echo('Checking for EC2 instance...')
+        # stop, terminate, or do nothing to ec2 based on policy
+        ec2_policy = ti.config.get('ec2_policy')
+        # check if the policy is to stop or terminate
+        if ec2_policy == None or ec2_policy == 'stop' or ec2_policy == 'terminate':
+            policy_str = ec2_policy if ec2_policy else 'default'
+            click.echo(f'Checking for EC2 instance and applying policy "{policy_str}"...')
             try:
+                # grab ec2 id
                 with urlopen(EC2_INSTANCE_ID_URL, timeout=5) as url:
                     ec2_instance_id = url.read().decode('utf-8')
                 click.echo(f'EC2 Runtime detected.')
                 client = boto3.client('ec2')
-                client.terminate_instances(InstanceIds=[ec2_instance_id], DryRun=False)
+                # default is stop
+                if ec2_policy == None or ec2_policy == 'stop':
+                    click.echo("Stopping...")
+                    client.stop_instances(InstanceIds=[ec2_instance_id], DryRun=False)
+                else:
+                    click.echo("Terminating...")
+                    client.terminate_instances(InstanceIds=[ec2_instance_id], DryRun=False)
             except URLError:
-                click.echo('No EC2 runtime detected.')
+                click.echo('No EC2 runtime detected. Doing nothing.')
         else:
-            click.echo('Not checking for EC2 since no-kill was set.')
+            click.echo('Not checking for EC2 runtime since policy is to keep running.')
     return result
 
 

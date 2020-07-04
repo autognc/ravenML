@@ -62,7 +62,7 @@ class TrainInput(object):
         has called a plugin's train command without providing a config, so we fail.
         """
         if config is None or plugin_name is None:
-            raise click.exceptions.UsageError(('You must provide the --config option'
+            raise click.exceptions.UsageError(('You must provide the --config option '
                 'on `ravenml train` when using this plugin command.'))
 
         ## Store config
@@ -128,7 +128,10 @@ class TrainInput(object):
         # plugins should only ACCESS the plugin_metadata attibute and add items. They should
         # NEVER assign to the attribute as it will break the reference to the overall metadata dict
         self.plugin_metadata = self.metadata[plugin_name]
-        self.plugin_config = config.get('plugin')
+        if not config.get('plugin'):
+            raise click.exceptions.BadParameter(config, param=config, param_hint='config, no "plugin" field. Config was')
+        else:
+            self.plugin_config = config.get('plugin') 
             
 class TrainOutput(object):
     """Represents a training output. Plugin training command functions return this object
