@@ -12,7 +12,7 @@ from pathlib import Path
 # local cache root path for ravenml application
 RAVENML_LOCAL_STORAGE_PATH = Path(os.path.expanduser('~/.ravenML'))
 
-class LocalCache(object):
+class RMLCache(object):
     """Represents a local storage cache. Provides functions for
     ensuring the cache exists and making subpaths within it.
 
@@ -23,25 +23,20 @@ class LocalCache(object):
         path (Path): Absolute path in filesystem to root of the local cache.
     """
 
-    def __init__(self, path=RAVENML_LOCAL_STORAGE_PATH):
-        self._path = path
+    # local cache root path for ravenml application
+    RAVENML_LOCAL_STORAGE_PATH = Path(os.path.expanduser('~/.ravenML'))
+    
+    def __init__(self, path:str='.'):
+        self.path = RAVENML_LOCAL_STORAGE_PATH / Path(path)
+        # self.ensure_exists()
 
-    def exists(self) -> bool:
-        """Checks if local storage cache exists on the machine.
-        
-        Returns:
-            bool: true if local cache exists, false if not
-        """
-        return os.path.exists(self.path)
-        
     def ensure_exists(self):
         """Ensures that the local storage cache exists on the machine.
         """
-        if not self.exists():
-            self._create()
+        os.makedirs(self.path, exist_ok=True)
 
     def subpath_exists(self, subpath: str) -> bool:
-        """Checks if a subpath within the local storage_cache exists.
+        """Checks if a subpath within the local storage cache exists.
         
         Args:
             subpath (str): desired subpath (i.e 'datasets/my_dataset')
@@ -57,8 +52,11 @@ class LocalCache(object):
         Args:
             subpath (str): desired subpath (i.e 'datasets/my_dataset')
         """
-        if not self.subpath_exists(subpath):
-            self._make_subpath(subpath)
+        os.makedirs(self.path / Path(subpath), exist_ok=True)
+    
+    def ensure_clean_subpath(self, subpath:str):
+        if self.subpath_exists(subpath):
+            shutil.rmtree(self.path / Path(subpath))
 
     def clean(self) -> bool:
         """Cleans local storage cache.
@@ -72,35 +70,3 @@ class LocalCache(object):
         except FileNotFoundError:
             return False
     
-    @property
-    def path(self):
-        return self._path
-    
-    @path.setter
-    def path(self, path):
-        self._path = path
-
-    def _create(self):
-        """Makes the local storage cache for ravenml.
-        
-        Not for external use (use ensure_exists() instead)
-        """
-        os.makedirs(self.path)
-
-    def _make_subpath(self, subpath: str):
-        """Creates a subpath within the local storage cache.
-
-        Not for external use (use ensure_subpath_exists() instead)
-        """
-        os.makedirs(self.path / Path(subpath))
-    
-# importable global cache, should be used wherever possible
-#
-# Example use for datasets:
-#
-# from pathlib import Path
-# from ravenml.utils.local_cache import LocalCache, global_cache
-#
-# dataset_cache = LocalCache(path=global_path.path / Path('datasets'))
-#
-global_cache = LocalCache()

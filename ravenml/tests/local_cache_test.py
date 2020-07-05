@@ -13,32 +13,25 @@ import re
 from pathlib import Path
 from click.testing import CliRunner
 from ravenml.cli import cli
-from ravenml.utils.local_cache import global_cache
+from ravenml.utils.local_cache import RMLCache
 
 ### SETUP ###
 runner = CliRunner()
-test_dir = os.path.dirname(__file__)
+test_dir = Path(os.path.dirname(__file__))
 test_data_dir = test_dir / Path('data')
 ansi_escape = re.compile(r'(\x9B|\x1B\[)[0-?]*[ -/]*[@-~]')
+test_cache = RMLCache()
 
 def setup_module():
     """ Sets up the module for testing.
     """
-    # alter global and dataset cache objects used throughout ravenml for local caching
-    global_cache.path = test_dir / Path('.testing')
-    # global_cache.ensure_exists()
-    
-    # copy config file from test data into temporary testing cache
-    # copyfile(test_data_dir / Path('config.yml'), global_cache.path / Path('config.yml'))
+    test_cache.path = test_dir / '.testing'
 
 def teardown_module():
     """ Tears down the module after testing.
     """
-    global_cache.clean()
-    
+    test_cache.clean()
 
-# NOTE: there are no automated tests for prompt behavior of commands, as prompt-toolkit
-# does not deal nicley with stdin not being an actual terminal (as pytest does it)
 
 ### TESTS ###
 def test_no_leaky_cache_creation():
@@ -48,4 +41,4 @@ def test_no_leaky_cache_creation():
     """
     result = runner.invoke(cli)
     assert result.exit_code == 0
-    assert not os.path.exists(global_cache.path)
+    assert not os.path.exists(test_cache.path)

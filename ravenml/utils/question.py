@@ -123,7 +123,7 @@ def user_confirms(message: str, default=False) -> bool:
     answer = prompt(question)
     return answer["value"]
     
-def cli_spinner(text, func, *args):
+def cli_spinner(text, func, *args, **kwargs):
     """ Halo spinner wrapper.
 
     Args:
@@ -138,7 +138,7 @@ def cli_spinner(text, func, *args):
     spinner = Spinner(text=text, text_color="magenta")
     spinner.start()
     try:
-        result = func(*args)
+        result = func(*args,**kwargs)
     except Exception:
         spinner.succeed(text=text + 'Failed.')
         raise

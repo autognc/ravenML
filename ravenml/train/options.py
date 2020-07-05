@@ -10,18 +10,13 @@ from ravenml.train.interfaces import TrainInput
 
 ### HELPERS/CALLBACKS ###
 
-
 ### OPTIONS ###
-"""Flag to determine if K-Fold Cross Validation will be used in training.
-"""
-kfold_opt = click.option(
-    '-k', '--kfold', is_flag=True, help='Perform kfold cross validation training.'
-)
-
 
 ### PASS DECORATORS ###
 """Click pass decorator for use in training plugin commands that expect
-to receive a TrainInput object. Ensures the creation of such an object
-if it is not found in the Context.
+to receive a TrainInput object. Triggers the creation of a TrainInput at ctx.obj
+if one does not already exist there when the command executes. This behavior is used
+to allow --help and other non-training plugin subcommands to run without triggering
+TrainInput construction. See the TrainInput __init__ for more details.
 """
 pass_train = click.make_pass_decorator(TrainInput, ensure=True)

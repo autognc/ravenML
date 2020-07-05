@@ -8,175 +8,128 @@ Command group for training in ravenml.
 import click
 import json
 import shortuuid
-import os
 import boto3
+import yaml
 from urllib.request import urlopen
 from urllib.error import URLError
 from pathlib import Path
 from pkg_resources import iter_entry_points
 from click_plugins import with_plugins
 from ravenml.train.interfaces import TrainInput, TrainOutput
-from ravenml.utils.dataset import get_dataset
 from ravenml.utils.question import cli_spinner
-from ravenml.utils.save import upload_file_to_s3, upload_dict_to_s3_as_json
-from ravenml.options import no_user_opt
+from ravenml.utils.aws import upload_file_to_s3, upload_dict_to_s3_as_json
 
 EC2_INSTANCE_ID_URL = 'http://169.254.169.254/latest/meta-data/instance-id'
 
 ### OPTIONS ###
-dataset_opt = click.option(
-    '-d', '--dataset', 'dataset', type=str, is_eager=True,
-    help='Name of dataset on S3 for training. Ignored without --no-user.'
-)
-
-local_opt = click.option(
-    '-l', '--local', 'local', type=str, is_eager=True, default='None',
-    help='Do not upload to S3 and instead save artifacts to the provided filepath. Ignored without --no-user.'
-)
-
-ec2_kill_opt = click.option(
-    '--no-kill', 'no_kill', is_flag=True,
-    help='Do not kill EC2 instance ravenML is running on after training.'
+config_opt = click.option(
+    '-c', '--config', type=str, help='Path to config file. Defaults to ~/ravenML_configs/config.yaml'
 )
 
 ### COMMANDS ###
 @with_plugins(iter_entry_points('ravenml.plugins.train'))
 @click.group(help='Training commands.')
 @click.pass_context
-@ec2_kill_opt
-@no_user_opt
-@dataset_opt
-@local_opt
-def train(ctx: click.Context, local: str, dataset: str, no_kill: bool):
+@config_opt
+def train(ctx: click.Context, config: str):
     """ Training command group.
     
     Args:
         ctx (Context): click context object
-        local (str): local filepath. defaults to 'None' and only used if in no-user mode
-        dataset (str): dataset name. None if not in no-user mode
+        config (str): Path to config yaml file for this training run. Required
+            when a user is calling a plugin command decorated with @pass_train
     """
-    if ctx.obj['NO_USER']:
-        # if no_user is true, make a TrainInput from the other flags
+    # check if config flag was passed, if not simply carry on to child command
+    if config:
+        # attempt to load config
         try:
-            dataset_obj = cli_spinner('Retrieving dataset from s3...', get_dataset, dataset)
-            if local == 'None': 
-                local = None
-            ti = TrainInput(inquire=False, dataset= dataset_obj, artifact_path=local)
-            # assign to context for use in plugin
-            ctx.obj = ti
-        except ValueError as e:
-            raise click.exceptions.BadParameter(dataset, ctx=ctx, param=dataset, param_hint='dataset name')
-    pass
+            with open(Path(config), 'r') as stream:
+                train_config = yaml.safe_load(stream)
+        except Exception as e:
+            hint = 'config, no such file exists'
+            raise click.exceptions.BadParameter(config, ctx=ctx, param=config, param_hint=hint)
+        # trigger TrainInput creation, note this may prompt the user depending on the config file used
+        ctx.obj = TrainInput(train_config, ctx.invoked_subcommand)
 
 @train.resultcallback()
 @click.pass_context
-# def process_result(ctx: click.Context, result: TrainOutput, local: str, dataset: str):
-def process_result(ctx: click.Context, result: TrainOutput, local: str, dataset: str,  no_kill: bool):
+def process_result(ctx: click.Context, result: TrainOutput, config: str):
     """Processes the result of a training by analyzing the given TrainOutput object.
     This callback is called after ANY command originating from the train command 
-    group, hence the check for commands other than training plugins.
+    group, hence the check to see if a result was actually returned - plugins
+    simply do not return a TrainOutput from non-training commands.
 
     Args:
         ctx (Context): click context object
+        ti (TrainInput): TrainInput object stored at ctx.obj, created at start of training.
+            This object contains the metadata from the run and the path to the
+            training artifacts (at ti.artifact_path) which is printed to the user
+            after a local training.
         result (TrainOutput): training output object returned by training plugin
-        local (str): copy of local option provided to original command (see train)
-        dataset (str): copy of dataset option provided to original comamand (see train)
+        config (str): config option from train command. Click requires that command
+            callbacks accept the options from the original command.
     """
-
-    # need to consider issues with this being called on every call to train
-    if ctx.invoked_subcommand != 'list' and result is not None:
-        # upload if not in local mode
-        if not result.local_mode:
-            uuid = cli_spinner('Uploading artifacts...', _upload_result, result)
+    if result is not None:
+        # only plugin training commands that return a TrainOutput will activate this block
+        # thus ctx.obj will always be a TrainInput object
+        # NOTE: you cannot use the @pass_train decorator on process_result, otherwise on
+        # non-training plugin commands, the TrainInput __init__ will be called by Click
+        # when process_result runs and no TrainInput is at ctx.obj
+        ti = ctx.obj    
+        # upload if not in local mode, determined by user defined artifact_path field in config
+        if not ti.config.get('artifact_path'):
+            uuid = cli_spinner('Uploading artifacts...', _upload_result, result, ti.metadata)
             click.echo(f'Artifact UUID: {uuid}')
         else:
-            click.echo(f'LOCAL MODE: Not uploading model to S3. Model is located at: {result.artifact_path}')
+            with open(ti.artifact_path / 'metadata.json', 'w') as f:
+                json.dump(ti.metadata, f, indent=2)
+            click.echo(f'LOCAL MODE: Not uploading model to S3. Model is located at: {ti.artifact_path}')
             
-        # kill if on ec2
-        if not no_kill:
-            click.echo('Attempting to kill EC2 instance...')
+        # stop, terminate, or do nothing to ec2 based on policy
+        ec2_policy = ti.config.get('ec2_policy')
+        # check if the policy is to stop or terminate
+        if ec2_policy == None or ec2_policy == 'stop' or ec2_policy == 'terminate':
+            policy_str = ec2_policy if ec2_policy else 'default'
+            click.echo(f'Checking for EC2 instance and applying policy "{policy_str}"...')
             try:
+                # grab ec2 id
                 with urlopen(EC2_INSTANCE_ID_URL, timeout=5) as url:
                     ec2_instance_id = url.read().decode('utf-8')
                 click.echo(f'EC2 Runtime detected.')
                 client = boto3.client('ec2')
-                client.terminate_instances(InstanceIds=[ec2_instance_id], DryRun=False)
+                # default is stop
+                if ec2_policy == None or ec2_policy == 'stop':
+                    click.echo("Stopping...")
+                    client.stop_instances(InstanceIds=[ec2_instance_id], DryRun=False)
+                else:
+                    click.echo("Terminating...")
+                    client.terminate_instances(InstanceIds=[ec2_instance_id], DryRun=False)
             except URLError:
-                click.echo('No EC2 runtime detected.')
-
-
+                click.echo('No EC2 runtime detected. Doing nothing.')
+        else:
+            click.echo('Not checking for EC2 runtime since policy is to keep running.')
     return result
 
-@train.command()
-def list():
-    """List available training plugins by name.
-    """
-    for entry in iter_entry_points(group='ravenml.plugins.train', name=None):
-        click.echo(entry.name)
-        
 
 ### HELPERS ###
-def _upload_result(result: TrainOutput):
+def _upload_result(result: TrainOutput, metadata: dict):
     """ Wraps upload procedure into single function for use with cli_spinner.
 
     Generates a UUID for the model and uploads all artifacts.
 
     Args:
-        result (TrainOutput): TrainOutput object to be uploaded
+        result (TrainOutput): TrainOutput object, to be uploaded
+        metadata (dict): metadata associated with this run, to be uploaded
     
     Returns:
         str: uuid assigned to result on upload
     """
     shortuuid.set_alphabet('23456789abcdefghijkmnopqrstuvwxyz')
     uuid = shortuuid.uuid()
-    model_name = f'{result.metadata["architecture"]}_{uuid}.pb'
+    model_name = f'{metadata["architecture"]}_{uuid}.pb'
     upload_file_to_s3('models', result.model_path, alternate_name=model_name)
-    upload_dict_to_s3_as_json(f'models/metadata_{uuid}', result.metadata)
+    upload_dict_to_s3_as_json(f'models/metadata_{uuid}', metadata)
     if result.extra_files != []:
         for fp in result.extra_files:
             upload_file_to_s3(f'extras/{uuid}', fp)
     return uuid
-
-# @train.command()
-# def testup():
-#     metadata = {
-#         "created_by": "carosn",
-#         "comments": "no",
-#         "date_started_at": "2019-05-03T01:33:50.694751Z",
-#         "dataset_used": {
-#             "name": "carsonTest",
-#             "date_created": "2019-03-18T22:38:59.794095Z",
-#             "created_by": "Carson Schubert",
-#             "comments": "initial test",
-#             "training_type": "Bounding Box",
-#             "image_ids": [
-#             "pic_204",
-#             "pic_701",
-#             "pic_268",
-#             "pic_594",
-#             "pic_634",
-#             "pic_674",
-#             "pic_310",
-#             "pic_236",
-#             "pic_270"
-#             ],
-#             "filters": {
-#             "groups": []
-#             },
-#             "transforms": []
-#         },
-#         "architecture": "ssd_mobilenet_v1_coco",
-#         "hyperparemeters": {
-#             "optimizer": "RMSProp",
-#             "num_classes": 2,
-#             "use_dropout": True,
-#             "dropout_keep_probability": 0.8,
-#             "initial_learning_rate": 0.004
-#         },
-#         "date_completed_at": "2019-05-03T01:35:01.441570Z"
-#     }
-#     base = Path('/home/carson/.ravenML/tf-bbox/temp')
-#     model = base / Path('models') / Path('model') / Path('export') \
-#                     / Path ('exported_model') / '1556847298' / 'saved_model.pb'        
-#     result = TrainOutput(metadata, base, model, [])
-#     cli_spinner('Uploading artifacts...', _upload_result, result)
