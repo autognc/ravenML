@@ -5,7 +5,7 @@ CLI tool for machine learning model training.
 
 ## Installation 
 
-### PyPI (NOT YET PUBLISHED)
+### PyPI
 Install from pip via:
 ```bash
 pip install ravenml

@@ -2,9 +2,14 @@ from setuptools import setup, find_packages
 
 setup(
     name='ravenml',
-    version='0.0.1',
-    description='Training CLI Tool',
+    version='1.1',
+    description='ML Training CLI Tool',
+    license='MIT',
     packages=find_packages(),
+    author='Carson Schubert, Abhi Dhir, Pratyush Singh',
+    author_email='carson.schubert14@gmail.com',
+    keywords= ['machine learning', 'data science'],
+    download_url = 'https://github.com/autognc/ravenML/archive/v1.1.tar.gz'
     install_requires=[
         'Click>=7.0',
         'click-plugins>=1.0.4',
