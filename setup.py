@@ -7,7 +7,7 @@ with open(path.join(proj_dir, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='ravenml',
-    version='1.1',
+    version='1.2',
     description='ML Training CLI Tool',
     long_description = long_description,
     long_description_content_type = 'text/markdown',
@@ -16,7 +16,7 @@ setup(
     author='Carson Schubert, Abhi Dhir, Pratyush Singh',
     author_email='carson.schubert14@gmail.com',
     keywords= ['machine learning', 'data science'],
-    download_url = 'https://github.com/autognc/ravenML/archive/v1.1.tar.gz',
+    download_url = 'https://github.com/autognc/ravenML/archive/v1.2.tar.gz',
     install_requires=[
         'Click>=7.0',
         'click-plugins>=1.0.4',
