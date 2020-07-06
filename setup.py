@@ -1,9 +1,16 @@
 from setuptools import setup, find_packages
+from os import path
+
+proj_dir = path.abspath(path.dirname(__file__))
+with open(path.join(proj_dir, 'README.md'), encoding='utf-8') as f:
+    long_description = f.read()
 
 setup(
     name='ravenml',
     version='1.1',
     description='ML Training CLI Tool',
+    long_description = long_description,
+    long_description_content_type = 'text/markdown',
     license='MIT',
     packages=find_packages(),
     author='Carson Schubert, Abhi Dhir, Pratyush Singh',
