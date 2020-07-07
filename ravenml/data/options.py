@@ -1,4 +1,5 @@
 import click
+from ravenml.data.interfaces import CreateInput
 
 ### HELPERS/CALLBACKS ###
 
@@ -32,4 +33,6 @@ filter_opt = click.option(
 )
 
 ### PASS DECORATORS ###
+
+pass_create = click.make_pass_decorator(CreateInput, ensure=True)
 

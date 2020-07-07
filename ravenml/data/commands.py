@@ -7,11 +7,16 @@ Command group for dataset exploration in ravenml.
 
 import click
 import pydoc
+import yaml
+from pkg_resources import iter_entry_points
+from click_plugins import with_plugins
 from colorama import Fore
+from pathlib import Path
 from ravenml.utils.imageset import get_imageset_names, get_imageset_metadata
 from ravenml.utils.dataset import get_dataset_names, get_dataset_metadata
 from ravenml.utils.plugins import LazyPluginGroup
 from ravenml.utils.question import cli_spinner
+from ravenml.data.interfaces import CreateInput
 
 # metedata fields to exclude when printing metadata to the user 
 # these are specific to datasets at the moment
@@ -32,6 +37,10 @@ filter_details_opt = click.option(
     '-f', '--filter-details', 'filter_str', type=str,
     help=('Keyword/phrase filter for displaying detailed imageset/dataset metadata. '
             'Case sensitive and case insensitive filtering is performed.')
+)
+
+config_opt = click.option(
+    '-c', '--config', type=str, help='Path to config file. Defaults to ~/ravenML_configs/config.yaml'
 )
 
 
@@ -57,9 +66,19 @@ def process_result(ctx: click.Context, result):
 ## Dataset Creation Commands ##
 # TODO: determine interfaces for this command
 @data.group(cls=LazyPluginGroup, entry_point_name='ravenml.plugins.data', help='Create a new dataset.')
-def create():
-    click.echo("Eventually this will create datasets for you.")
-
+@with_plugins(iter_entry_points('ravenml.plugins.data'))
+@click.pass_context
+@config_opt
+def create(ctx: click.Context, config: str):
+    if config:
+    # load config
+        try:
+            with open(Path(config), 'r') as stream:
+                config = yaml.safe_load(stream)
+        except Exception as e:
+            hint = 'config, no such file exists'
+            raise click.exceptions.BadParameter(config, ctx=ctx, param=config, param_hint=hint)
+        ctx.obj = CreateInput(config, ctx.invoked_subcommand)
 
 ## Imageset Commands ##
 @data.command(help="List available image sets.")

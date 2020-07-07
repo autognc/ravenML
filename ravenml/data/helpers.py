@@ -6,16 +6,17 @@ from pathlib import Path
 from colorama import Fore
 from ravenml.utils.question import cli_spinner, user_selects, user_confirms, user_input
 from ravenml.utils.io_utils import copy_data_locally, download_data_from_s3
+from ravenml.utils.config import get_config
 
-def default_filter_and_load(data_source, **kwargs):
-    cli_spinner("Loading metadata...", ingest_metadata, data_source, kwargs)
+def default_filter_and_load(**kwargs):
+    bucketConfig = get_config()
+    image_bucket_name = bucketConfig.get('image_bucket_name')
+
+    cli_spinner("Loading metadata...", ingest_metadata, kwargs['imageset'], image_bucket_name)
 
     tags_df = load_metadata(kwargs["metadata_prefix"])
     filter_metadata = {"groups": []}
     
-    # ask the user if they would like to perform filtering
-    # if yes, enter a loop that supplies filter options
-    # if no, skip
     if kwargs['filter']:
         sets = {}
         # outer loop to determine how many sets the user will create
@@ -123,12 +124,13 @@ def default_filter_and_load(data_source, **kwargs):
             if image_id in image_ids:
                 return True
 
-    if(data_source == "Local"):
-        cli_spinner("Copying data locally...", copy_data_locally, source_dir=kwargs["data_filepath"], 
-                    condition_func=need_file)
-    elif(data_source == "S3"):
-        cli_spinner("Downloading data from S3...", download_data_from_s3, bucket_name=kwargs["bucket"], 
-                    filter_vals=kwargs['filter_vals'], condition_func=need_file)
+    # if(data_source == "Local"):
+    #     cli_spinner("Copying data locally...", copy_data_locally, source_dir=kwargs["data_filepath"], 
+    #                 condition_func=need_file)
+    # elif(data_source == "S3"):
+    print(kwargs['imageset'])
+    cli_spinner("Downloading data from S3...", download_data_from_s3, bucket_name=image_bucket_name, 
+                filter_vals=kwargs['imageset'], condition_func=need_file)
 
     # sequester data for this specific run    
     cwd = Path.cwd()
@@ -227,17 +229,18 @@ def join_sets(sets):
         subset='index', keep='first').set_index('index')
     return result
 
-def ingest_metadata(data_source, kwargs):
+def ingest_metadata(imageset, bucket_name):
     only_json_func = lambda filename: filename.startswith("meta_")
 
-    if data_source == "Local":
-        copy_data_locally(
-            source_dir=kwargs["data_filepath"], condition_func=only_json_func)
-    elif data_source == "S3":
-        download_data_from_s3(
-            bucket_name=kwargs["bucket"],
-            filter_vals=kwargs["filter_vals"],
-            condition_func=only_json_func)
+    # if data_source == "Local":
+    #     copy_data_locally(
+    #         source_dir=kwargs["data_filepath"], condition_func=only_json_func)
+    # elif data_source == "S3":
+
+    download_data_from_s3(
+        bucket_name=bucket_name,
+        filter_vals=imageset,
+        condition_func=only_json_func)
 
 def load_metadata(METADATA_PREFIX):
     """Loads all image metadata JSONs and loads their tags
