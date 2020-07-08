@@ -80,7 +80,7 @@ class CreateInput(object):
                     raise click.exceptions.BadParameter(imageset_list, param=imageset_list, param_hint=hint)
         
         # download dataset and populate field  
-        image_ids, filter_metadata, temp_dir = default_filter_and_load(imageset=imageset_list, 
+        imageset_data = default_filter_and_load(imageset=imageset_list, 
                         metadata_prefix=METADATA_PREFIX,
                         filter=config.get('filter'))        
     
@@ -96,6 +96,7 @@ class CreateInput(object):
         # handle automatic metadata fields
         self.metadata['date_started_at'] = datetime.utcnow().isoformat() + "Z"
         self.metadata['imagesets_used'] = imageset_list
+        self.metadata['imageset_data'] = imageset_data
         
         ## Set up fields for plugin use
         # NOTE: plugins should overwrite the architecture field to something
@@ -109,6 +110,13 @@ class CreateInput(object):
         else:
             self.plugin_config = config.get('plugin') 
 
+class CreateOutput(object):
+    
+    def __init__(self, dataset_path: Path, dataset_name: str, config: dict):
+        self.dataset_path = dataset_path
+        self.dataset_name = dataset_name
+        self.upload = config.get("upload") if "upload" in config.keys() else user_confirms(message="Would you like to upload the dataset to S3?")
+        self.delete_local = config.get("delete_local") if "delete_local" in config.keys() else user_confirms(message="Would you like to delete your " + dataset_name + " dataset?")
 
 class Dataset(object):
     """Represents a training dataset.

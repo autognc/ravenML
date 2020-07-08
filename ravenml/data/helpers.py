@@ -142,7 +142,7 @@ def default_filter_and_load(**kwargs):
     cli_spinner("Copying data into temp folder...", copy_data_locally,
         source_dir=data_dir, dest_dir=temp_dir, condition_func=need_file)
 
-    return image_ids, filter_metadata, temp_dir
+    return { "image_ids": image_ids, "filter_metadata": filter_metadata, "temp_dir": temp_dir}
 
 def and_filter(tags_df, filter_tags):
     """Filters out a set of images based upon the intersection of its tag values

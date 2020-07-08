@@ -8,6 +8,7 @@ Command group for dataset exploration in ravenml.
 import click
 import pydoc
 import yaml
+import shutil
 from pkg_resources import iter_entry_points
 from click_plugins import with_plugins
 from colorama import Fore
@@ -15,8 +16,12 @@ from pathlib import Path
 from ravenml.utils.imageset import get_imageset_names, get_imageset_metadata
 from ravenml.utils.dataset import get_dataset_names, get_dataset_metadata
 from ravenml.utils.plugins import LazyPluginGroup
-from ravenml.utils.question import cli_spinner
+from ravenml.utils.question import cli_spinner, user_confirms
 from ravenml.data.interfaces import CreateInput
+from ravenml.data.options import pass_create
+from ravenml.data.interfaces import CreateInput, CreateOutput
+from ravenml.utils.config import get_config
+from ravenml.utils.io_utils import upload_dataset
 
 # metedata fields to exclude when printing metadata to the user 
 # these are specific to datasets at the moment
@@ -55,14 +60,6 @@ def data(ctx):
     """
     pass
 
-# TODO: eventually this will handle uploading/deleting the created
-# dataset given by a plugin when create is called, see train.commands.process_result for example
-@data.resultcallback()
-@click.pass_context
-def process_result(ctx: click.Context, result):
-    pass
-
-
 ## Dataset Creation Commands ##
 # TODO: determine interfaces for this command
 @data.group(cls=LazyPluginGroup, entry_point_name='ravenml.plugins.data', help='Create a new dataset.')
@@ -80,6 +77,26 @@ def create(ctx: click.Context, config: str):
             raise click.exceptions.BadParameter(config, ctx=ctx, param=config, param_hint=hint)
         ctx.obj = CreateInput(config, ctx.invoked_subcommand)
 
+<<<<<<< HEAD
+=======
+# TODO: eventually this will handle uploading/deleting the created
+# dataset given by a plugin when create is called, see train.commands.process_result for example
+@data.resultcallback()
+@click.pass_context
+def process_result(ctx: click.Context, result: CreateOutput):
+    if result is not None:
+        if (result.upload):
+            bucketConfig = get_config()
+            bucket = bucketConfig["dataset_bucket_name"]
+            cli_spinner("Uploading dataset to S3...", upload_dataset, bucket_name=bucket, directory=result.dataset_path)
+        
+        if (result.delete_local):
+            cli_spinner("Deleting " + result.dataset_name + " dataset...", shutil.rmtree, result.dataset_path)
+    
+    return result
+
+
+>>>>>>> Updates interfaces and commands to work with plugins
 ## Imageset Commands ##
 @data.command(help="List available image sets.")
 @filter_details_opt
