@@ -2,19 +2,18 @@ import os, shutil, time, json
 import contextlib2
 from pathlib import Path
 from object_detection.dataset_tools import tf_record_creation_util
-from object_detection.utils import dataset_util
 from random import shuffle
 from datetime import datetime
-import tensorflow as tf
 
-def write_dataset(obj_list,
+def write_dataset(obj_list: list,
+                  associated_files: dict,
+                  related_data_prefixes: dict,
+                  label_to_int_dict: dict,
+                  export_function,
                   test_percent=0.2,
                   num_folds=5,
                   custom_dataset_name='dataset',
-                  out_dir=Path.cwd(),
-                  associated_files=None,
-                  related_data_prefixes=None,
-                  label_to_int_dict=None):
+                  out_dir=Path.cwd()):
     """Main driver for this file
     
     Args:
@@ -24,9 +23,10 @@ def write_dataset(obj_list,
         out_dir (Path): directory to write this dataset to
         custom_dataset_name (str): name of the dataset's containing folder
     """
+
     dataset_path = out_dir / 'dataset' / custom_dataset_name
     print(dataset_path)
-    delete_dir(dataset_path)
+    delete_dir(dataset_path) # Only deletes the contents already inside the directory
 
     test_subset, dev_subset = split_data(obj_list, test_percent)
 
@@ -39,7 +39,7 @@ def write_dataset(obj_list,
     # write_out_fold(standard_path, fold, is_standard=True)
 
     complete_path = dev_path / 'complete'
-    write_out_complete_set(complete_path, dev_subset, label_to_int_dict)
+    write_out_complete_set(complete_path, dev_subset, label_to_int_dict, export_function)
 
 
 def write_metadata(
@@ -139,10 +139,8 @@ def write_related_data(objects, path, associated_files, related_data_prefixes):
         copy_associated_files(path, obj, associated_files, related_data_prefixes)
 
 def copy_associated_files(destination, obj, associated_files, related_data_prefixes):
-        # if self.temp_dir is None:
         data_dir = Path.cwd() / "data"
-        # else:
-        #     data_dir = self.temp_dir
+
         for suffix in associated_files.values():
             for prefix in related_data_prefixes.values():
                 filepath = data_dir / f'{prefix}{obj.get("image_id")}{suffix}'
@@ -150,7 +148,7 @@ def copy_associated_files(destination, obj, associated_files, related_data_prefi
                     shutil.copy(
                         str(filepath.absolute()), str(destination.absolute()))
 
-def write_out_complete_set(path, data, label_to_int_dict):
+def write_out_complete_set(path, data, label_to_int_dict, export_function):
     """Writes out the special complete set into 'dev'. No validation data.
     
     Args:
@@ -163,10 +161,10 @@ def write_out_complete_set(path, data, label_to_int_dict):
 
     test_record_data, train_record_data = split_data(data)
 
-    write_out_tf_examples(train_record_data, record_path / 'train.record', label_to_int_dict)
-    write_out_tf_examples(test_record_data, record_path / 'test.record', label_to_int_dict)
+    write_out_tf_examples(train_record_data, record_path / 'train.record', label_to_int_dict, export_function)
+    write_out_tf_examples(test_record_data, record_path / 'test.record', label_to_int_dict, export_function)
 
-def write_out_tf_examples(objects, path, label_to_int_dict):
+def write_out_tf_examples(objects, path, label_to_int_dict, export_function):
     """Writes out list of objects out as a single tf_example
     
     Args:
@@ -183,55 +181,7 @@ def write_out_tf_examples(objects, path, label_to_int_dict):
             tf_record_close_stack, path, num_shards)
 
         for index, object_item in enumerate(objects):
-            tf_example = export_as_TFExample(object_item, label_to_int_dict)
+            tf_example = export_function(object_item, label_to_int_dict)
             output_shard_index = index % num_shards
             output_tfrecords[output_shard_index].write(
                 tf_example.SerializeToString())
-
-def export_as_TFExample(object, label_to_int_dict):
-        """Converts LabeledImageMask object to tf_example
-        
-        Returns:
-            tf_example (tf.train.Example): TensorFlow specified training object.
-        """
-        path_to_image = Path(object["image_filepath"])
-
-        with tf.io.gfile.GFile(str(path_to_image), 'rb') as fid:
-            encoded_png = fid.read()
-
-        image_width  = object["xdim"]
-        image_height = object["ydim"]
-
-        filename = path_to_image.name.encode('utf8')
-        image_format = bytes(object["image_type"], encoding='utf-8')
-        xmins = []
-        xmaxs = []
-        ymins = []
-        ymaxs = []
-        classes_text = []
-        classes = []
-
-        for bounding_box in object["label_boxes"]:
-            xmins.append(bounding_box["xmin"] / image_width)
-            xmaxs.append(bounding_box["xmax"] / image_width)
-            ymins.append(bounding_box["ymin"] / image_height)
-            ymaxs.append(bounding_box["ymax"] / image_height)
-            classes_text.append(bounding_box["label"].encode('utf8'))
-            classes.append(label_to_int_dict[bounding_box["label"]])
-
-        tf_example = tf.train.Example(features=tf.train.Features(feature={
-            'image/height': dataset_util.int64_feature(image_height),
-            'image/width': dataset_util.int64_feature(image_width),
-            'image/filename': dataset_util.bytes_feature(filename),
-            'image/source_id': dataset_util.bytes_feature(filename),
-            'image/encoded': dataset_util.bytes_feature(encoded_png),
-            'image/format': dataset_util.bytes_feature(image_format),
-            'image/object/bbox/xmin': dataset_util.float_list_feature(xmins),
-            'image/object/bbox/xmax': dataset_util.float_list_feature(xmaxs),
-            'image/object/bbox/ymin': dataset_util.float_list_feature(ymins),
-            'image/object/bbox/ymax': dataset_util.float_list_feature(ymaxs),
-            'image/object/class/text': dataset_util.bytes_list_feature(classes_text),
-            'image/object/class/label': dataset_util.int64_list_feature(classes),
-        }))
-
-        return tf_example
