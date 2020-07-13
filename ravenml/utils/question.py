@@ -144,4 +144,19 @@ def cli_spinner(text, func, *args, **kwargs):
         raise
     spinner.succeed(text=text + 'Complete.')
     return result
+
+def cli_spinner_wrapper(text):
+    def spinner(func):
+        def wrapper(*args, **kwargs):
+            spinner = Spinner(text=text, text_color="magenta")
+            spinner.start()
+            try:
+                result = func(*args,**kwargs)
+            except Exception:
+                spinner.succeed(text=text + 'Failed.')
+                raise
+            spinner.succeed(text=text + 'Complete.')
+            return result
+        return wrapper
+    return spinner
     

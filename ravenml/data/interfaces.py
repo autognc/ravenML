@@ -9,6 +9,7 @@ import glob
 import click
 import os
 import shutil
+import json
 from pathlib import Path
 from datetime import datetime
 from ravenml.utils.local_cache import RMLCache
@@ -77,12 +78,7 @@ class CreateInput(object):
             for imageset in imageset_list:
                 if imageset not in get_imageset_names():
                     hint = 'imageset name, no such imageset exists on S3'
-                    raise click.exceptions.BadParameter(imageset_list, param=imageset_list, param_hint=hint)
-        
-        # download dataset and populate field  
-        imageset_data = default_filter_and_load(imageset=imageset_list, 
-                        metadata_prefix=METADATA_PREFIX,
-                        filter=config.get('filter'))        
+                    raise click.exceptions.BadParameter(imageset_list, param=imageset_list, param_hint=hint)  
     
         ## Set up Basic Metadata
         # TODO: add environment description, git hash, etc
@@ -93,6 +89,21 @@ class CreateInput(object):
         if not self.metadata.get('comments'):
             self.metadata['comments'] = user_input('Please enter descriptive comments about this training:')
         
+        if config.get('kfolds'):
+            self.metadata['kfolds'] = config['kfolds']
+        if config.get('test_percent'):
+            self.metadata['test_percent'] = config['test_percent']
+
+        # Initialize Directory for Dataset    
+        self.metadata['dataset_name'] = config['dataset_name'] if config.get('dataset_name') else user_input(message="What would you like to name this dataset?")
+        os.makedirs(dp / self.metadata['dataset_name'], exist_ok=True)
+
+
+        # download dataset and populate field  
+        imageset_data = default_filter_and_load(imageset=imageset_list, 
+                        metadata_prefix=METADATA_PREFIX,
+                        filter=config.get('filter'))      
+
         # handle automatic metadata fields
         self.metadata['date_started_at'] = datetime.utcnow().isoformat() + "Z"
         self.metadata['imagesets_used'] = imageset_list
@@ -108,15 +119,56 @@ class CreateInput(object):
         if not config.get('plugin'):
             raise click.exceptions.BadParameter(config, param=config, param_hint='config, no "plugin" field. Config was')
         else:
-            self.plugin_config = config.get('plugin') 
+            self.plugin_config = config.get('plugin')
+
+        self.write_metadata(name=self.metadata['dataset_name'],
+                            user=self.metadata['created_by'],
+                            comments=self.metadata['comments'],
+                            training_type=plugin_name,
+                            image_ids=imageset_data['image_ids'],
+                            filters=imageset_data['filter_metadata'])
+
+    def write_metadata(self,
+                        name,
+                        user,
+                        comments,
+                        training_type,
+                        image_ids,
+                        filters):
+        """Writes out a metadata file in JSON format
+
+        Args:
+            name (str): the name of the dataset
+            comments (str): comments or notes supplied by the user regarding the
+                dataset produced by this tool
+            training_type (str): the training type selected by the user
+            image_ids (list): a list of image IDs that ended up in the final
+                dataset (either dev or test)
+            filters (dict): a dictionary representing filter metadata
+            transforms (dict): a dictionary representing transform metadata
+            out_dir (Path, optional): Defaults to Path.cwd().
+        """
+        dataset_path = self.dataset_path / name
+        metadata_filepath = dataset_path / 'metadata.json'
+
+        metadata = {}
+        metadata["name"] = name
+        metadata["date_created"] = datetime.utcnow().isoformat() + "Z"
+        metadata["created_by"] = user
+        metadata["comments"] = comments
+        metadata["training_type"] = training_type
+        metadata["image_ids"] = image_ids
+        metadata["filters"] = filters
+        with open(metadata_filepath, 'w') as outfile:
+            json.dump(metadata, outfile) 
 
 class CreateOutput(object):
     
-    def __init__(self, dataset_path: Path, dataset_name: str, config: dict):
-        self.dataset_path = dataset_path
-        self.dataset_name = dataset_name
-        self.upload = config.get("upload") if "upload" in config.keys() else user_confirms(message="Would you like to upload the dataset to S3?")
-        self.delete_local = config.get("delete_local") if "delete_local" in config.keys() else user_confirms(message="Would you like to delete your " + dataset_name + " dataset?")
+    def __init__(self, create: CreateInput):
+        self.dataset_path = create.dataset_path
+        self.dataset_name = create.metadata['dataset_name']
+        self.upload = create.config["upload"] if 'upload' in create.config.keys() else user_confirms(message="Would you like to upload the dataset to S3?")
+        self.delete_local = create.config["delete_local"] if 'delete_local' in create.config.keys() else user_confirms(message="Would you like to delete your " + self.dataset_name + " dataset?")
 
 class Dataset(object):
     """Represents a training dataset.
