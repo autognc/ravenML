@@ -19,7 +19,6 @@ setup(
     download_url = 'https://github.com/autognc/ravenML/archive/v1.2.tar.gz',
     install_requires=[
         'Click>=7.0',
-        'click-plugins>=1.0.4',
         'questionary>=1.0.2',
         'boto3>=1.9.86', 
         'shortuuid>=0.5.0',

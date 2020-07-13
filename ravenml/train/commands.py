@@ -18,6 +18,7 @@ from click_plugins import with_plugins
 from ravenml.train.interfaces import TrainInput, TrainOutput
 from ravenml.utils.question import cli_spinner
 from ravenml.utils.aws import upload_file_to_s3, upload_dict_to_s3_as_json
+from ravenml.utils.plugins import LazyPluginGroup
 
 EC2_INSTANCE_ID_URL = 'http://169.254.169.254/latest/meta-data/instance-id'
 
@@ -27,8 +28,7 @@ config_opt = click.option(
 )
 
 ### COMMANDS ###
-@with_plugins(iter_entry_points('ravenml.plugins.train'))
-@click.group(help='Training commands.')
+@click.group(cls=LazyPluginGroup, entry_point_name='ravenml.plugins.train', help='Training commands.')
 @click.pass_context
 @config_opt
 def train(ctx: click.Context, config: str):

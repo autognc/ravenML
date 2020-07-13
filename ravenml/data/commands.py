@@ -12,6 +12,7 @@ from click_plugins import with_plugins
 from colorama import Fore
 from ravenml.utils.imageset import get_imageset_names, get_imageset_metadata
 from ravenml.utils.dataset import get_dataset_names, get_dataset_metadata
+from ravenml.utils.plugins import LazyPluginGroup
 from ravenml.utils.question import cli_spinner
 
 # metedata fields to exclude when printing metadata to the user 
@@ -57,8 +58,7 @@ def process_result(ctx: click.Context, result):
 
 ## Dataset Creation Commands ##
 # TODO: determine interfaces for this command
-@with_plugins(iter_entry_points('ravenml.plugins.data'))
-@data.group(help='Create a new dataset.')
+@data.group(cls=LazyPluginGroup, entry_point_name='ravenml.plugins.data', help='Create a new dataset.')
 def create():
     click.echo("Eventually this will create datasets for you.")
 
