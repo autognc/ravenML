@@ -19,6 +19,7 @@ class DatasetWriter(object):
         self.label_to_int_dict = {}
         self.dataset_path = create.dataset_path
         self.dataset_name = metadata['dataset_name']
+        self.cache = create.plugin_cache
     
     def construct_all(self, *args, **kwargs):
         raise NotImplementedError
@@ -117,7 +118,7 @@ class DatasetWriter(object):
             self.copy_associated_files(path, obj)
 
     def copy_associated_files(self, destination, obj):
-            data_dir = Path.cwd() / "data"
+            data_dir = self.cache.path / 'data'
 
             for suffix in self.associated_files.values():
                 for prefix in self.related_data_prefixes.values():

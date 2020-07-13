@@ -85,6 +85,8 @@ def create(ctx: click.Context, config: str):
 @click.pass_context
 def process_result(ctx: click.Context, result: CreateOutput):
     if result is not None:
+        cli_spinner("Deleting temp directory...", shutil.rmtree, result.temp_dir)
+
         if (result.upload):
             bucketConfig = get_config()
             bucket = bucketConfig["dataset_bucket_name"]
@@ -92,7 +94,7 @@ def process_result(ctx: click.Context, result: CreateOutput):
         
         if (result.delete_local):
             cli_spinner("Deleting " + result.dataset_name + " dataset...", shutil.rmtree, result.dataset_path)
-    
+            
     return result
 
 

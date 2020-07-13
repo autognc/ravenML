@@ -12,9 +12,9 @@ def default_filter_and_load(**kwargs):
     bucketConfig = get_config()
     image_bucket_name = bucketConfig.get('image_bucket_name')
 
-    cli_spinner("Loading metadata...", ingest_metadata, kwargs['imageset'], image_bucket_name)
+    cli_spinner("Loading metadata...", ingest_metadata, kwargs['imageset'], image_bucket_name, kwargs['cache'])
 
-    tags_df = load_metadata(kwargs["metadata_prefix"])
+    tags_df = load_metadata(kwargs["metadata_prefix"], kwargs['cache'])
     filter_metadata = {"groups": []}
     
     if kwargs['filter']:
@@ -128,17 +128,18 @@ def default_filter_and_load(**kwargs):
     #     cli_spinner("Copying data locally...", copy_data_locally, source_dir=kwargs["data_filepath"], 
     #                 condition_func=need_file)
     # elif(data_source == "S3"):
-    print(kwargs['imageset'])
+
     cli_spinner("Downloading data from S3...", download_data_from_s3, bucket_name=image_bucket_name, 
-                filter_vals=kwargs['imageset'], condition_func=need_file)
+                filter_vals=kwargs['imageset'], condition_func=need_file, cache=kwargs['cache'])
 
     # sequester data for this specific run    
-    cwd = Path.cwd()
-    temp_dir = cwd / 'data' / 'temp'
-    data_dir = cwd / 'data'
-    if os.path.exists(temp_dir):
-        shutil.rmtree(temp_dir)
-    os.makedirs(temp_dir)
+    cache = kwargs['cache']
+    cache.ensure_clean_subpath('data/temp')
+    cache.ensure_subpath_exists('data/temp')
+
+    temp_dir = cache.path / 'data' / 'temp'
+    data_dir = cache.path / 'data'
+
     cli_spinner("Copying data into temp folder...", copy_data_locally,
         source_dir=data_dir, dest_dir=temp_dir, condition_func=need_file)
 
@@ -229,7 +230,7 @@ def join_sets(sets):
         subset='index', keep='first').set_index('index')
     return result
 
-def ingest_metadata(imageset, bucket_name):
+def ingest_metadata(imageset, bucket_name, cache):
     only_json_func = lambda filename: filename.startswith("meta_")
 
     # if data_source == "Local":
@@ -240,9 +241,10 @@ def ingest_metadata(imageset, bucket_name):
     download_data_from_s3(
         bucket_name=bucket_name,
         filter_vals=imageset,
-        condition_func=only_json_func)
+        condition_func=only_json_func,
+        cache=cache)
 
-def load_metadata(METADATA_PREFIX):
+def load_metadata(METADATA_PREFIX, cache):
     """Loads all image metadata JSONs and loads their tags
 
     Returns:
@@ -253,8 +255,7 @@ def load_metadata(METADATA_PREFIX):
                 in that column header
     """
     tags_df = pd.DataFrame()
-    cwd = os.getcwd() # Used to be Path.cwd()
-    data_dir = cwd + '/data'
+    data_dir = cache.path / 'data'
 
     for dir_entry in os.scandir(data_dir):
         if not dir_entry.name.startswith(METADATA_PREFIX):

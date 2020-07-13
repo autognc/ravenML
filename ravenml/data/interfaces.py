@@ -13,7 +13,7 @@ import json
 from pathlib import Path
 from datetime import datetime
 from ravenml.utils.local_cache import RMLCache
-from ravenml.utils.question import cli_spinner, user_input, user_selects, user_confirms
+from ravenml.utils.question import cli_spinner, cli_spinner_wrapper, user_input, user_selects, user_confirms
 from ravenml.utils.imageset import get_imageset_names
 from ravenml.data.helpers import default_filter_and_load
 from colorama import Fore
@@ -102,7 +102,8 @@ class CreateInput(object):
         # download dataset and populate field  
         imageset_data = default_filter_and_load(imageset=imageset_list, 
                         metadata_prefix=METADATA_PREFIX,
-                        filter=config.get('filter'))      
+                        filter=config.get('filter'),
+                        cache=self.plugin_cache)    
 
         # handle automatic metadata fields
         self.metadata['date_started_at'] = datetime.utcnow().isoformat() + "Z"
@@ -128,6 +129,7 @@ class CreateInput(object):
                             image_ids=imageset_data['image_ids'],
                             filters=imageset_data['filter_metadata'])
 
+    @cli_spinner_wrapper("Writing out metadata locally...")
     def write_metadata(self,
                         name,
                         user,
@@ -165,8 +167,9 @@ class CreateInput(object):
 class CreateOutput(object):
     
     def __init__(self, create: CreateInput):
-        self.dataset_path = create.dataset_path
         self.dataset_name = create.metadata['dataset_name']
+        self.dataset_path = create.dataset_path / self.dataset_name
+        self.temp_dir = create.metadata['imageset_data']['temp_dir']
         self.upload = create.config["upload"] if 'upload' in create.config.keys() else user_confirms(message="Would you like to upload the dataset to S3?")
         self.delete_local = create.config["delete_local"] if 'delete_local' in create.config.keys() else user_confirms(message="Would you like to delete your " + self.dataset_name + " dataset?")
 

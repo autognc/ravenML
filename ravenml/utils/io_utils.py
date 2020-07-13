@@ -61,6 +61,7 @@ def copy_data_locally(source_dir, dest_dir=None,
 
 
 def download_data_from_s3(bucket_name,
+                          cache,
                           filter_vals=[''],
                           condition_func=lambda filename: True,
                           num_threads=20):
@@ -86,8 +87,7 @@ def download_data_from_s3(bucket_name,
             # TODO: test for files with prefixes here
             queue.task_done()
 
-    cwd = Path.cwd()
-    data_dir = cwd / 'data'
+    data_dir = cache.path / 'data'
     # try:
     os.makedirs(data_dir, exist_ok=True)
     # except FileExistsError:
@@ -120,8 +120,6 @@ def download_data_from_s3(bucket_name,
         download_queue.put(None)
     for worker in workers:
         worker.join()
-
-    os.chdir(cwd)
 
 def upload_dataset(bucket_name, directory, num_threads=20):
     """Recursively uploads a directory to S3
