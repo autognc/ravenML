@@ -2,148 +2,110 @@ import os
 import shutil
 import pandas as pd
 import json
+import sys
 from pathlib import Path
 from colorama import Fore
 from ravenml.utils.question import cli_spinner, user_selects, user_confirms, user_input
 from ravenml.utils.io_utils import copy_data_locally, download_data_from_s3
 from ravenml.utils.config import get_config
 
-def default_filter_and_load(**kwargs):
-    bucketConfig = get_config()
-    image_bucket_name = bucketConfig.get('image_bucket_name')
-
-    cli_spinner("Loading metadata...", ingest_metadata, kwargs['imageset'], image_bucket_name, kwargs['cache'])
-
-    tags_df = load_metadata(kwargs["metadata_prefix"], kwargs['cache'])
-    filter_metadata = {"groups": []}
-    
-    if kwargs['filter']:
-        sets = {}
-        # outer loop to determine how many sets the user will create
-        try:
+def filter_sets():
+    sets = {}
+    # outer loop to determine how many sets the user will create
+    try:
+        while True:
+            subset = tags_df
+            this_group_filters = []
+            len_subsets = [len(subset)]
+            # inner loop to handle filtering for ONE set
             while True:
-                subset = tags_df
-                this_group_filters = []
-                len_subsets = [len(subset)]
-                # inner loop to handle filtering for ONE set
-                while True:
 
-                    # if filters have been applied, display them to the user
-                    # to help guide their next choice
-                    if len(this_group_filters) > 0:
-                        filters_applied = [
-                            "   > " + (" " + f["type"] + " ").join(f["tags"]) +
-                            " ({} -> {})".format(len_subsets[i],
-                                                len_subsets[i + 1])
-                            for i, f in enumerate(this_group_filters)
-                        ]
-                        print(Fore.MAGENTA + "ℹ Filters already applied:\n{}".
-                            format("\n".join(filters_applied)))
+                # if filters have been applied, display them to the user
+                # to help guide their next choice
+                if len(this_group_filters) > 0:
+                    filters_applied = [
+                        "   > " + (" " + f["type"] + " ").join(f["tags"]) +
+                        " ({} -> {})".format(len_subsets[i],
+                                            len_subsets[i + 1])
+                        for i, f in enumerate(this_group_filters)
+                    ]
+                    print(Fore.MAGENTA + "ℹ Filters already applied:\n{}".
+                        format("\n".join(filters_applied)))
 
-                    selected_tags = user_selects(
-                        message=
-                        "Please select a set of tags with which to apply a filter:",
-                        choices=list(tags_df),
-                        selection_type="checkbox")
-                    filter_type = user_selects(
-                        message=
-                        "Which filter would you like to apply to the above set?",
-                        choices=["AND (intersection)", "OR (union)"],
-                        selection_type="list")
+                selected_tags = user_selects(
+                    message=
+                    "Please select a set of tags with which to apply a filter:",
+                    choices=list(tags_df),
+                    selection_type="checkbox")
+                filter_type = user_selects(
+                    message=
+                    "Which filter would you like to apply to the above set?",
+                    choices=["AND (intersection)", "OR (union)"],
+                    selection_type="list")
 
-                    if filter_type == "AND (intersection)":
-                        subset = and_filter(subset, selected_tags)
-                        this_group_filters.append({
-                            "type": "AND",
-                            "tags": selected_tags
-                        })
-                    elif filter_type == "OR (union)":
-                        subset = or_filter(subset, selected_tags)
-                        this_group_filters.append({
-                            "type": "OR",
-                            "tags": selected_tags
-                        })
-                    print(
-                        Fore.GREEN +
-                        "ℹ There are {} images that meet the filter criteria selected."
-                        .format(len(subset)))
-                    len_subsets.append(len(subset))
+                if filter_type == "AND (intersection)":
+                    subset = and_filter(subset, selected_tags)
+                    this_group_filters.append({
+                        "type": "AND",
+                        "tags": selected_tags
+                    })
+                elif filter_type == "OR (union)":
+                    subset = or_filter(subset, selected_tags)
+                    this_group_filters.append({
+                        "type": "OR",
+                        "tags": selected_tags
+                    })
+                print(
+                    Fore.GREEN +
+                    "ℹ There are {} images that meet the filter criteria selected."
+                    .format(len(subset)))
+                len_subsets.append(len(subset))
 
-                    if not user_confirms(
-                            message=
-                            "Would you like to continue filtering this set?",
-                            default=False):
-                        set_name = user_input(
-                            message="What would you like to name this set?")
-                            # validator=FilenameValidator)
-                        sets[set_name] = subset
-                        filter_metadata["groups"].append({
-                            "name":
-                            set_name,
-                            "filters":
-                            this_group_filters
-                        })
-                        break
-                    
                 if not user_confirms(
                         message=
-                        "Would you like to create more sets via filtering?",
+                        "Would you like to continue filtering this set?",
                         default=False):
+                    set_name = user_input(
+                        message="What would you like to name this set?")
+                        # validator=FilenameValidator)
+                    sets[set_name] = subset
+                    filter_metadata["groups"].append({
+                        "name":
+                        set_name,
+                        "filters":
+                        this_group_filters
+                    })
                     break
-
-            sets_to_join = []
-            for set_name, set_data in sets.items():
-                how_many = user_input(
+                
+            if not user_confirms(
                     message=
-                    'How many images of set "{}" would you like to use? (?/{})'
-                    .format(set_name, len(set_data)),
-                    # validator=IntegerValidator,
-                    default=str(len(set_data)))
-                n = int(how_many)
-                sets_to_join.append(
-                    set_data.sample(n, replace=False, random_state=42))
+                    "Would you like to create more sets via filtering?",
+                    default=False):
+                break
 
-                # find the right group within the metadata dict and add the number
-                # included to it
-                for group in filter_metadata["groups"]:
-                    if group["name"] == set_name:
-                        group["number_included"] = n
+        sets_to_join = []
+        for set_name, set_data in sets.items():
+            how_many = user_input(
+                message=
+                'How many images of set "{}" would you like to use? (?/{})'
+                .format(set_name, len(set_data)),
+                # validator=IntegerValidator,
+                default=str(len(set_data)))
+            n = int(how_many)
+            sets_to_join.append(
+                set_data.sample(n, replace=False, random_state=42))
 
-            image_ids = join_sets(sets_to_join).index.tolist()
+            # find the right group within the metadata dict and add the number
+            # included to it
+            for group in filter_metadata["groups"]:
+                if group["name"] == set_name:
+                    group["number_included"] = n
 
-        except Exception as e:
-            print(e)
-            sys.exit(1)
-    else: 
-        image_ids = tags_df.index.tolist()
+        return join_sets(sets_to_join).index.tolist()
 
-    # condition function for S3 download and local copying
-    def need_file(filename):
-        if len(filename) > 0:
-            image_id = filename[filename.index('_')+1:filename.index('.')]
-            if image_id in image_ids:
-                return True
-
-    # if(data_source == "Local"):
-    #     cli_spinner("Copying data locally...", copy_data_locally, source_dir=kwargs["data_filepath"], 
-    #                 condition_func=need_file)
-    # elif(data_source == "S3"):
-
-    cli_spinner("Downloading data from S3...", download_data_from_s3, bucket_name=image_bucket_name, 
-                filter_vals=kwargs['imageset'], condition_func=need_file, cache=kwargs['cache'])
-
-    # sequester data for this specific run    
-    cache = kwargs['cache']
-    cache.ensure_clean_subpath('data/temp')
-    cache.ensure_subpath_exists('data/temp')
-
-    temp_dir = cache.path / 'data' / 'temp'
-    data_dir = cache.path / 'data'
-
-    cli_spinner("Copying data into temp folder...", copy_data_locally,
-        source_dir=data_dir, dest_dir=temp_dir, condition_func=need_file)
-
-    return { "image_ids": image_ids, "filter_metadata": filter_metadata, "temp_dir": temp_dir}
+    except Exception as e:
+        print(e)
+        sys.exit(1)
 
 def and_filter(tags_df, filter_tags):
     """Filters out a set of images based upon the intersection of its tag values

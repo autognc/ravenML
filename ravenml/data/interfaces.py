@@ -15,7 +15,6 @@ from datetime import datetime
 from ravenml.utils.local_cache import RMLCache
 from ravenml.utils.question import cli_spinner, cli_spinner_wrapper, user_input, user_selects, user_confirms
 from ravenml.utils.imageset import get_imageset_names
-from ravenml.data.helpers import default_filter_and_load
 from colorama import Fore
 
 ### CONSTANTS ###
@@ -25,6 +24,7 @@ STANDARD_DIR = 'standard'
 FOLD_DIR_PREFIX = 'fold_'
 TEST_DIR = 'test'
 METADATA_PREFIX = 'meta_'
+TEMP_DIR_PREFIX = 'data/temp'
 
 # TODO add necessary functionality to this class as needed
 
@@ -93,27 +93,23 @@ class CreateInput(object):
             self.metadata['kfolds'] = config['kfolds']
         if config.get('test_percent'):
             self.metadata['test_percent'] = config['test_percent']
+        if config.get('filter'):
+            self.metadata['filter'] = config['filter']
+        else:
+            self.metadata['filter'] = False
 
         # Initialize Directory for Dataset    
         self.metadata['dataset_name'] = config['dataset_name'] if config.get('dataset_name') else user_input(message="What would you like to name this dataset?")
-        os.makedirs(dp / self.metadata['dataset_name'], exist_ok=True)
-
-
-        # download dataset and populate field  
-        imageset_data = default_filter_and_load(imageset=imageset_list, 
-                        metadata_prefix=METADATA_PREFIX,
-                        filter=config.get('filter'),
-                        cache=self.plugin_cache)    
+        os.makedirs(dp / self.metadata['dataset_name'], exist_ok=True)  
 
         # handle automatic metadata fields
         self.metadata['date_started_at'] = datetime.utcnow().isoformat() + "Z"
         self.metadata['imagesets_used'] = imageset_list
-        self.metadata['imageset_data'] = imageset_data
         
         ## Set up fields for plugin use
         # NOTE: plugins should overwrite the architecture field to something
         # more specific/useful since it is used to name the final uploaded model
-        self.metadata[plugin_name] = {'architecture': plugin_name}
+        self.metadata[plugin_name] = {'architecture': plugin_name, 'temp_dir_path': self.plugin_cache.path / TEMP_DIR_PREFIX}
         # plugins should only ACCESS the plugin_metadata attibute and add items. They should
         # NEVER assign to the attribute as it will break the reference to the overall metadata dict
         self.plugin_metadata = self.metadata[plugin_name]
@@ -122,54 +118,12 @@ class CreateInput(object):
         else:
             self.plugin_config = config.get('plugin')
 
-        self.write_metadata(name=self.metadata['dataset_name'],
-                            user=self.metadata['created_by'],
-                            comments=self.metadata['comments'],
-                            training_type=plugin_name,
-                            image_ids=imageset_data['image_ids'],
-                            filters=imageset_data['filter_metadata'])
-
-    @cli_spinner_wrapper("Writing out metadata locally...")
-    def write_metadata(self,
-                        name,
-                        user,
-                        comments,
-                        training_type,
-                        image_ids,
-                        filters):
-        """Writes out a metadata file in JSON format
-
-        Args:
-            name (str): the name of the dataset
-            comments (str): comments or notes supplied by the user regarding the
-                dataset produced by this tool
-            training_type (str): the training type selected by the user
-            image_ids (list): a list of image IDs that ended up in the final
-                dataset (either dev or test)
-            filters (dict): a dictionary representing filter metadata
-            transforms (dict): a dictionary representing transform metadata
-            out_dir (Path, optional): Defaults to Path.cwd().
-        """
-        dataset_path = self.dataset_path / name
-        metadata_filepath = dataset_path / 'metadata.json'
-
-        metadata = {}
-        metadata["name"] = name
-        metadata["date_created"] = datetime.utcnow().isoformat() + "Z"
-        metadata["created_by"] = user
-        metadata["comments"] = comments
-        metadata["training_type"] = training_type
-        metadata["image_ids"] = image_ids
-        metadata["filters"] = filters
-        with open(metadata_filepath, 'w') as outfile:
-            json.dump(metadata, outfile) 
-
 class CreateOutput(object):
     
     def __init__(self, create: CreateInput):
         self.dataset_name = create.metadata['dataset_name']
         self.dataset_path = create.dataset_path / self.dataset_name
-        self.temp_dir = create.metadata['imageset_data']['temp_dir']
+        self.temp_dir = create.plugin_metadata['temp_dir_path']
         self.upload = create.config["upload"] if 'upload' in create.config.keys() else user_confirms(message="Would you like to upload the dataset to S3?")
         self.delete_local = create.config["delete_local"] if 'delete_local' in create.config.keys() else user_confirms(message="Would you like to delete your " + self.dataset_name + " dataset?")
 
