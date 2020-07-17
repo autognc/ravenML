@@ -45,7 +45,7 @@ class CreateInput(object):
         ## Set up Local Cache
         # TODO: maybe create the subdir here?
         # currently the cache_name subdir is only created IF the plugin places files there
-        self.plugin_cache = RMLCache(plugin_name)
+        self.plugin_cache = RMLCache(f'data_{plugin_name})
         
         ## Set up Artifact Path
         dp = config.get('dataset_path')
