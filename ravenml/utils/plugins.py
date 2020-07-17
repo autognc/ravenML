@@ -6,41 +6,31 @@ Provides useful helper functions for training plugins.
 """
 
 import click
+from pkg_resources import iter_entry_points
 
-def raise_parameter_error(option, hint: str):
-    raise click.exceptions.BadParameter(option, param=option, param_hint=hint)
 
-### DYNAMIC IMPORT FUNCTION ###
-# NOTE: this function should be used in all plugins, but the function is NOT
-# importable because of the use of globals(). You must copy the code.
-# function is derived from https://stackoverflow.com/a/46878490
+class LazyPluginGroup(click.Group):
+    def __init__(self, entry_point_name, **kwargs):
+        commands = {entry_point.name.replace('_', '-'): entry_point
+                    for entry_point in iter_entry_points(entry_point_name)}
+        self._loaded = set()
+        super().__init__(commands=commands, **kwargs)
 
-# def _dynamic_import(modulename, shortname = None, asfunction = False):
-#     """ Function to dynamically import python modules into the global scope.
+    def _load_entry_point(self, name):
+        if name not in self._loaded:
+            self.commands[name] = self.commands[name].load()
+            self._loaded.add(name)
 
-#     Args:
-#         modulename (str): name of the module to import (ex: os, ex: os.path)
-#         shortname (str, optional): desired shortname binding of the module (ex: import tensorflow as tf)
-#         asfunction (bool, optional): whether the shortname is a module function or not (ex: from time import time)
-        
-#     Examples:
-#         Whole module import: i.e, replace "import tensorflow"
-#         >>> _dynamic_import('tensorflow')
-        
-#         Named module import: i.e, replace "import tensorflow as tf"
-#         >>> _dynamic_import('tensorflow', 'tf')
-        
-#         Submodule import: i.e, replace "from object_detction import model_lib"
-#         >>> _dynamic_import('object_detection.model_lib', 'model_lib')
-        
-#         Function import: i.e, replace "from ravenml.utils.config import get_config"
-#         >>> _dynamic_import('ravenml.utils.config', 'get_config', asfunction=True)
-        
-#     """
-#     if shortname is None: 
-#         shortname = modulename
-#     if asfunction is False:
-#         globals()[shortname] = importlib.import_module(modulename)
-#     else:        
-#         globals()[shortname] = getattr(importlib.import_module(modulename), shortname)
+    def get_command(self, ctx, cmd_name):
+        command = self.commands.get(cmd_name)
+        if command is not None and cmd_name not in self._loaded:
+            self.commands[cmd_name] = command.load()
+        return super().get_command(ctx, cmd_name)
+
+    def format_commands(self, ctx, formatter):
+        commands = self.list_commands(ctx)
+        if commands:
+            with formatter.section("Commands"):
+                formatter.write_dl((name, "") for name in commands)
+
 
