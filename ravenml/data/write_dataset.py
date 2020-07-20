@@ -62,6 +62,7 @@ class DatasetWriter(object):
                 image_id = filename[filename.index('_')+1:filename.index('.')]
                 if image_id in image_ids:
                     return True
+            return False
 
         # if(data_source == "Local"):
         #     cli_spinner("Copying data locally...", copy_data_locally, source_dir=kwargs["data_filepath"], 
