@@ -1,7 +1,7 @@
 import os, shutil, time, json
 import contextlib2
+import tensorflow as tf
 from pathlib import Path
-from object_detection.dataset_tools import tf_record_creation_util
 from random import shuffle
 from datetime import datetime
 from ravenml.data.interfaces import CreateInput
@@ -18,8 +18,8 @@ class DatasetWriter(object):
         self.related_data_prefixes = kwargs['related_data_prefixes']
         
         metadata = create.metadata
-        self.num_folds = metadata['kfolds'] if metadata.get('kfolds') else 5 # Never actually used
-        self.test_percent = metadata['test_percent'] if metadata.get('test_percent') else .2
+        self.num_folds = create.kfolds # Never actually used
+        self.test_percent = create.test_percent
         self.label_to_int_dict = {}
         self.image_ids = None
         self.filter_metadata = None
@@ -36,7 +36,7 @@ class DatasetWriter(object):
     def construct_all(self, *args, **kwargs):
         raise NotImplementedError
 
-    def export_as_TFExample(self, *args, **kwargs):
+    def export_data(self, *args, **kwargs):
         raise NotImplementedError
     
     def write_additional_files(self, *args, **kwargs):
@@ -59,9 +59,12 @@ class DatasetWriter(object):
         # condition function for S3 download and local copying
         def need_file(filename):
             if len(filename) > 0:
-                image_id = filename[filename.index('_')+1:filename.index('.')]
-                if image_id in image_ids:
-                    return True
+                try:
+                    image_id = filename[filename.index('_')+1:filename.index('.')]
+                    if image_id in image_ids:
+                        return True
+                except ValueError:
+                    return False
             return False
 
         # if(data_source == "Local"):
@@ -149,10 +152,6 @@ class DatasetWriter(object):
             path (Path object): target directory
         """
         if os.path.isdir(path):
-            print('\n', "Deleting contents of", path,
-                "you've got five seconds to cancel this.")
-            time.sleep(5)
-
             for the_file in os.listdir(path):
                 file_path = os.path.join(path, the_file)
                 try:
@@ -223,10 +222,10 @@ class DatasetWriter(object):
 
         test_record_data, train_record_data = self.split_data(data)
 
-        self.write_out_tf_examples(train_record_data, record_path / 'train.record')
-        self.write_out_tf_examples(test_record_data, record_path / 'test.record')
+        self.write_out_examples(train_record_data, record_path / 'train.record')
+        self.write_out_examples(test_record_data, record_path / 'test.record')
 
-    def write_out_tf_examples(self, objects, path):
+    def write_out_examples(self, objects, path):
         """Writes out list of objects out as a single tf_example
         
         Args:
@@ -237,13 +236,20 @@ class DatasetWriter(object):
         
         with open(str(path) + '.numexamples', 'w') as output:
             output.write(str(len(objects)))
+        
+        tf_record_output_filenames = [
+            '{}-{:05d}-of-{:05d}'.format(path, idx, num_shards)
+            for idx in range(num_shards)
+        ]
 
         with contextlib2.ExitStack() as tf_record_close_stack:
-            output_tfrecords = tf_record_creation_util.open_sharded_output_tfrecords(
-                tf_record_close_stack, path, num_shards)
+            output_tfrecords = [
+                tf_record_close_stack.enter_context(tf.python_io.TFRecordWriter(file_name))
+                for file_name in tf_record_output_filenames
+            ]
 
             for index, object_item in enumerate(objects):
-                tf_example = self.export_as_TFExample(object_item)
+                tf_example = self.export_data(object_item)
                 output_shard_index = index % num_shards
                 output_tfrecords[output_shard_index].write(
                     tf_example.SerializeToString())

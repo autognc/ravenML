@@ -77,28 +77,28 @@ def create(ctx: click.Context, config: str):
             raise click.exceptions.BadParameter(config, ctx=ctx, param=config, param_hint=hint)
         ctx.obj = CreateInput(config, ctx.invoked_subcommand)
 
-<<<<<<< HEAD
-=======
-# TODO: eventually this will handle uploading/deleting the created
 # dataset given by a plugin when create is called, see train.commands.process_result for example
-@data.resultcallback()
+@create.resultcallback()
 @click.pass_context
-def process_result(ctx: click.Context, result: CreateOutput):
+def process_result(ctx: click.Context, result: CreateOutput, config: str):
     if result is not None:
-        cli_spinner("Deleting temp directory...", shutil.rmtree, result.temp_dir)
+        ci = ctx.obj
+        dataset_name = ci.metadata['dataset_name']
+        dataset_path = ci.dataset_path / dataset_name
+        temp_dir = ci.plugin_metadata['temp_dir_path']
+        cli_spinner("Deleting temp directory...", shutil.rmtree, temp_dir)
 
-        if (result.upload):
+        if (ci.upload):
             bucketConfig = get_config()
             bucket = bucketConfig["dataset_bucket_name"]
-            cli_spinner("Uploading dataset to S3...", upload_dataset, bucket_name=bucket, directory=result.dataset_path)
+            cli_spinner("Uploading dataset to S3...", upload_dataset, bucket_name=bucket, directory=dataset_path)
         
-        if (result.delete_local):
-            cli_spinner("Deleting " + result.dataset_name + " dataset...", shutil.rmtree, result.dataset_path)
+        if (ci.delete_local):
+            cli_spinner("Deleting " + dataset_name + " dataset...", shutil.rmtree, dataset_path)
             
     return result
 
 
->>>>>>> Updates interfaces and commands to work with plugins
 ## Imageset Commands ##
 @data.command(help="List available image sets.")
 @filter_details_opt

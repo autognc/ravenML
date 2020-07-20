@@ -26,7 +26,6 @@ TEST_DIR = 'test'
 METADATA_PREFIX = 'meta_'
 TEMP_DIR_PREFIX = 'data/temp'
 
-# TODO add necessary functionality to this class as needed
 
 class CreateInput(object):
     """Represents a dataset creation input. Contains all plugin-independent
@@ -71,12 +70,12 @@ class CreateInput(object):
         ## Set up Imageset
         # prompt for dataset if not provided
         imageset_list = config.get('imageset')
+        imageset_options = get_imageset_names()
         if imageset_list is None:
-            imageset_options = cli_spinner('No imageset provided. Finding imagesets on S3...', get_imageset_names)
             imageset_list = user_selects('Choose imageset:', imageset_options, selection_type="checkbox")
         else: 
             for imageset in imageset_list:
-                if imageset not in get_imageset_names():
+                if imageset not in imageset_options:
                     hint = 'imageset name, no such imageset exists on S3'
                     raise click.exceptions.BadParameter(imageset_list, param=imageset_list, param_hint=hint)  
     
@@ -89,10 +88,8 @@ class CreateInput(object):
         if not self.metadata.get('comments'):
             self.metadata['comments'] = user_input('Please enter descriptive comments about this training:')
         
-        if config.get('kfolds'):
-            self.metadata['kfolds'] = config['kfolds']
-        if config.get('test_percent'):
-            self.metadata['test_percent'] = config['test_percent']
+        self.kfolds = config['kfolds'] if config.get('kfolds') else 0
+        self.test_percent = config['test_percent'] if config.get('test_percent') else .2
         if config.get('filter'):
             self.metadata['filter'] = config['filter']
         else:
@@ -117,15 +114,14 @@ class CreateInput(object):
             raise click.exceptions.BadParameter(config, param=config, param_hint='config, no "plugin" field. Config was')
         else:
             self.plugin_config = config.get('plugin')
+        
+        self.upload = config["upload"] if 'upload' in config.keys() else user_confirms(message="Would you like to upload the dataset to S3?")
+        self.delete_local = config["delete_local"] if 'delete_local' in config.keys() else user_confirms(message="Would you like to delete your " + self.metadata['dataset_name'] + " dataset?")
 
 class CreateOutput(object):
     
-    def __init__(self, create: CreateInput):
-        self.dataset_name = create.metadata['dataset_name']
-        self.dataset_path = create.dataset_path / self.dataset_name
-        self.temp_dir = create.plugin_metadata['temp_dir_path']
-        self.upload = create.config["upload"] if 'upload' in create.config.keys() else user_confirms(message="Would you like to upload the dataset to S3?")
-        self.delete_local = create.config["delete_local"] if 'delete_local' in create.config.keys() else user_confirms(message="Would you like to delete your " + self.dataset_name + " dataset?")
+    def __init__(self):
+        self.a = "s"
 
 class Dataset(object):
     """Represents a training dataset.
