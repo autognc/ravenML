@@ -15,6 +15,8 @@ from datetime import datetime
 from ravenml.utils.local_cache import RMLCache
 from ravenml.utils.question import cli_spinner, cli_spinner_wrapper, user_input, user_selects, user_confirms
 from ravenml.utils.imageset import get_imageset_names
+from ravenml.utils.config import get_config
+from ravenml.utils.aws import download_prefix
 from colorama import Fore
 
 ### CONSTANTS ###
@@ -24,7 +26,7 @@ STANDARD_DIR = 'standard'
 FOLD_DIR_PREFIX = 'fold_'
 TEST_DIR = 'test'
 METADATA_PREFIX = 'meta_'
-TEMP_DIR_PREFIX = 'data/temp'
+TEMP_DIR_PREFIX = 'datasets/temp'
 
 
 class CreateInput(object):
@@ -45,13 +47,13 @@ class CreateInput(object):
         # TODO: maybe create the subdir here?
         # currently the cache_name subdir is only created IF the plugin places files there
         self.plugin_cache = RMLCache(f'data_{plugin_name}')
+        self.imageset_cache = RMLCache()
         
         ## Set up Artifact Path
         dp = config.get('dataset_path')
         if dp is None:
-            self.plugin_cache.ensure_clean_subpath('temp')
-            self.plugin_cache.ensure_subpath_exists('temp')
-            self.dataset_path = Path(self.plugin_cache.path / 'temp')
+            self.plugin_cache.ensure_subpath_exists('datasets')
+            self.dataset_path = Path(self.plugin_cache.path / 'datasets')
         else:
             dp = Path(os.path.expanduser(dp))
             # check if local path contains data
@@ -77,7 +79,12 @@ class CreateInput(object):
             for imageset in imageset_list:
                 if imageset not in imageset_options:
                     hint = 'imageset name, no such imageset exists on S3'
-                    raise click.exceptions.BadParameter(imageset_list, param=imageset_list, param_hint=hint)  
+                    raise click.exceptions.BadParameter(imageset_list, param=imageset_list, param_hint=hint)
+
+        ## Download imagesets
+        self.imageset_cache.ensure_subpath_exists('imagesets')            
+        self.imageset_paths = []                
+        self.download_imagesets(imageset_list)
     
         ## Set up Basic Metadata
         # TODO: add environment description, git hash, etc
@@ -97,7 +104,7 @@ class CreateInput(object):
 
         # Initialize Directory for Dataset    
         self.metadata['dataset_name'] = config['dataset_name'] if config.get('dataset_name') else user_input(message="What would you like to name this dataset?")
-        os.makedirs(dp / self.metadata['dataset_name'], exist_ok=True)  
+        os.makedirs(self.dataset_path / self.metadata['dataset_name'], exist_ok=True)  
 
         # handle automatic metadata fields
         self.metadata['date_started_at'] = datetime.utcnow().isoformat() + "Z"
@@ -106,6 +113,8 @@ class CreateInput(object):
         ## Set up fields for plugin use
         # NOTE: plugins should overwrite the architecture field to something
         # more specific/useful since it is used to name the final uploaded model
+        self.plugin_cache.ensure_clean_subpath(TEMP_DIR_PREFIX)
+        self.plugin_cache.ensure_subpath_exists(TEMP_DIR_PREFIX)
         self.metadata[plugin_name] = {'architecture': plugin_name, 'temp_dir_path': self.plugin_cache.path / TEMP_DIR_PREFIX}
         # plugins should only ACCESS the plugin_metadata attibute and add items. They should
         # NEVER assign to the attribute as it will break the reference to the overall metadata dict
@@ -117,6 +126,16 @@ class CreateInput(object):
         
         self.upload = config["upload"] if 'upload' in config.keys() else user_confirms(message="Would you like to upload the dataset to S3?")
         self.delete_local = config["delete_local"] if 'delete_local' in config.keys() else user_confirms(message="Would you like to delete your " + self.metadata['dataset_name'] + " dataset?")
+
+    @cli_spinner_wrapper("Downloading imagesets from S3...")
+    def download_imagesets(self, imageset_list):
+        for imageset in imageset_list:
+            bucketConfig = get_config()
+            image_bucket_name = bucketConfig.get('image_bucket_name')
+            status = download_prefix(image_bucket_name, imageset, self.imageset_cache, 'imagesets/')
+            if(not status):
+                raise Exception("Full imageset for " + imageset + " was not able to be downloaded")
+            self.imageset_paths.append(self.imageset_cache.path / 'imagesets' / imageset)
 
 class CreateOutput(object):
     

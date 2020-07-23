@@ -3,13 +3,14 @@ import shutil
 import pandas as pd
 import json
 import sys
+from queue import Queue
+from threading import Thread
 from pathlib import Path
 from colorama import Fore
 from ravenml.utils.question import cli_spinner, user_selects, user_confirms, user_input
-from ravenml.utils.io_utils import copy_data_locally, download_data_from_s3
 from ravenml.utils.config import get_config
 
-def filter_sets():
+def default_filter(tags_df, filter_metadata):
     sets = {}
     # outer loop to determine how many sets the user will create
     try:
@@ -192,21 +193,7 @@ def join_sets(sets):
         subset='index', keep='first').set_index('index')
     return result
 
-def ingest_metadata(imageset, bucket_name, cache):
-    only_json_func = lambda filename: filename.startswith("meta_")
-
-    # if data_source == "Local":
-    #     copy_data_locally(
-    #         source_dir=kwargs["data_filepath"], condition_func=only_json_func)
-    # elif data_source == "S3":
-
-    download_data_from_s3(
-        bucket_name=bucket_name,
-        filter_vals=imageset,
-        condition_func=only_json_func,
-        cache=cache)
-
-def load_metadata(METADATA_PREFIX, cache):
+def default_load_image_ids(metadata_prefix, imageset_paths):
     """Loads all image metadata JSONs and loads their tags
 
     Returns:
@@ -217,20 +204,63 @@ def load_metadata(METADATA_PREFIX, cache):
                 in that column header
     """
     tags_df = pd.DataFrame()
-    data_dir = cache.path / 'data'
-
-    for dir_entry in os.scandir(data_dir):
-        if not dir_entry.name.startswith(METADATA_PREFIX):
-            continue
-        image_id = dir_entry.name.replace(METADATA_PREFIX, '').replace(".json", '')
-        with open(dir_entry.path, "r") as read_file:
-            data = json.load(read_file)
-        tag_list = data.get("tags", ['untagged'])
-        if len(tag_list) == 0:
-            tag_list = ['untagged']
-        temp = pd.DataFrame(
-            dict(zip(tag_list, [True] * len(tag_list))), index=[image_id])
-        tags_df = pd.concat((tags_df, temp), sort=False)
-    tags_df = tags_df.fillna(False)
+    for data_dir in imageset_paths:
+        for dir_entry in os.scandir(data_dir):
+            if not dir_entry.name.startswith(metadata_prefix):
+                continue
+            image_id = dir_entry.name.replace(metadata_prefix, '').replace(".json", '')
+            with open(dir_entry.path, "r") as read_file:
+                data = json.load(read_file)
+            tag_list = data.get("tags", ['untagged'])
+            if len(tag_list) == 0:
+                tag_list = ['untagged']
+            temp = pd.DataFrame(
+                dict(zip(tag_list, [True] * len(tag_list))), index=[(data_dir, image_id)])
+            tags_df = pd.concat((tags_df, temp), sort=False)
+        tags_df = tags_df.fillna(False)
 
     return tags_df
+
+def copy_data_locally(images, dest_dir,
+                      condition_func, num_threads=20):
+    """Copies data from a local source into Jigsaw given some condition
+    
+    Args:
+        source_dir (str or pathlib `Path`): the source directory from which
+            data should be copied
+        condition_func (function, optional): a function that uses the filename
+            to determine whether data should be copied. This allows for only
+            copying portions of the source data if desired. Defaults to True
+            for all filenames.
+        num_threads (int, optional): Defaults to 20. Number of threads
+            performing concurrent copies.
+    """
+
+    def copy_object(queue):
+        while True:
+            filepath = queue.get()
+            if filepath is None:
+                break
+            shutil.copy(filepath, dest_dir.absolute())
+            queue.task_done()
+
+    # create a queue for objects that need to be copied
+    # and spawn threads to copy them concurrently
+    copy_queue = Queue(maxsize=0)
+    workers = []
+    for worker in range(num_threads):
+        worker = Thread(target=copy_object, args=(copy_queue, ))
+        worker.setDaemon(True)
+        worker.start()
+        workers.append(worker)
+
+    for imageset in set([image[0] for image in images]):
+        for file in imageset.iterdir():
+            if(os.path.isfile(file) and condition_func(imageset, file.name) and not (dest_dir / file.name).exists()):
+                copy_queue.put(file.absolute())
+
+    copy_queue.join()
+    for _ in range(num_threads):
+        copy_queue.put(None)
+    for worker in workers:
+        worker.join()

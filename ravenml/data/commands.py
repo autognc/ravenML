@@ -21,7 +21,7 @@ from ravenml.data.interfaces import CreateInput
 from ravenml.data.options import pass_create
 from ravenml.data.interfaces import CreateInput, CreateOutput
 from ravenml.utils.config import get_config
-from ravenml.utils.io_utils import upload_dataset
+from ravenml.utils.aws import upload_directory
 
 # metedata fields to exclude when printing metadata to the user 
 # these are specific to datasets at the moment
@@ -91,7 +91,7 @@ def process_result(ctx: click.Context, result: CreateOutput, config: str):
         if (ci.upload):
             bucketConfig = get_config()
             bucket = bucketConfig["dataset_bucket_name"]
-            cli_spinner("Uploading dataset to S3...", upload_dataset, bucket_name=bucket, directory=dataset_path)
+            cli_spinner("Uploading dataset to S3...", upload_directory, bucket_name=bucket, directory=dataset_path)
         
         if (ci.delete_local):
             cli_spinner("Deleting " + dataset_name + " dataset...", shutil.rmtree, dataset_path)

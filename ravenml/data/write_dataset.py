@@ -7,9 +7,7 @@ from datetime import datetime
 from ravenml.data.interfaces import CreateInput
 from ravenml.utils.question import cli_spinner, cli_spinner_wrapper
 from ravenml.utils.config import get_config
-from ravenml.data.helpers import filter_sets, load_metadata, ingest_metadata
-from ravenml.utils.io_utils import download_data_from_s3, copy_data_locally
-
+from ravenml.data.helpers import default_filter, default_load_image_ids, copy_data_locally
 
 class DatasetWriter(object):
 
@@ -29,7 +27,7 @@ class DatasetWriter(object):
         self.created_by = metadata['created_by']
         self.comments = metadata['comments']
         self.plugin_name = create.plugin_metadata['architecture']
-        self.imagesets_used = metadata['imagesets_used']
+        self.imageset_paths = create.imageset_paths
         self.filter = metadata['filter']
         self.cache = create.plugin_cache
     
@@ -42,51 +40,34 @@ class DatasetWriter(object):
     def write_additional_files(self, *args, **kwargs):
         raise NotImplementedError
 
-    def filter_and_load(self, metadata_prefix):
-        bucketConfig = get_config()
-        image_bucket_name = bucketConfig.get('image_bucket_name')
-
-        cli_spinner("Loading metadata...", ingest_metadata, self.imagesets_used, image_bucket_name, self.cache)
-
-        tags_df = load_metadata(metadata_prefix, self.cache)
+    def filter_sets(self, metadata_prefix):
+        tags_df = default_load_image_ids(metadata_prefix, self.imageset_paths)
         filter_metadata = {"groups": []}
-
         if self.filter:
-            image_ids = filter_sets()
+            self.image_ids = default_filter(tags_df, filter_metadata)
         else: 
-            image_ids = tags_df.index.tolist()
-                
-        # condition function for S3 download and local copying
-        def need_file(filename):
+            self.image_ids = tags_df.index.tolist()
+        
+        self.filter_metadata = filter_metadata
+
+    def load_data(self, metadata_prefix):         
+        if not self.image_ids:
+            tags_df = default_load_image_ids(metadata_prefix, self.imageset_paths)
+            self.image_ids = tags_df.index.tolist()
+            self.filter_metadata = {"groups": []}
+        
+        def need_file(prefix, filename):
             if len(filename) > 0:
                 try:
                     image_id = filename[filename.index('_')+1:filename.index('.')]
-                    if image_id in image_ids:
+                    if (prefix, image_id) in self.image_ids:
                         return True
                 except ValueError:
                     return False
             return False
 
-        # if(data_source == "Local"):
-        #     cli_spinner("Copying data locally...", copy_data_locally, source_dir=kwargs["data_filepath"], 
-        #                 condition_func=need_file)
-        # elif(data_source == "S3"):
-
-        cli_spinner("Downloading data from S3...", download_data_from_s3, bucket_name=image_bucket_name, 
-                    filter_vals=self.imagesets_used, condition_func=need_file, cache=self.cache)
-
-        # sequester data for this specific run    
-        cache = self.cache
-        cache.ensure_clean_subpath('data/temp')
-        cache.ensure_subpath_exists('data/temp')
-
-        data_dir = cache.path / 'data'
-
         cli_spinner("Copying data into temp folder...", copy_data_locally,
-            source_dir=data_dir, dest_dir=self.temp_dir, condition_func=need_file)
-        
-        self.image_ids = image_ids
-        self.filter_metadata = filter_metadata
+            images=self.image_ids, dest_dir=self.temp_dir, condition_func=need_file)
     
     @cli_spinner_wrapper("Writing out metadata locally...")
     def write_metadata(self):
@@ -112,7 +93,7 @@ class DatasetWriter(object):
         metadata["created_by"] = self.created_by
         metadata["comments"] = self.comments
         metadata["training_type"] = self.plugin_name
-        metadata["image_ids"] = self.image_ids
+        metadata["image_ids"] = [(image_id[0].name, image_id[1]) for image_id in self.image_ids]
         metadata["filters"] = self.filter_metadata
         with open(metadata_filepath, 'w') as outfile:
             json.dump(metadata, outfile) 
@@ -195,12 +176,11 @@ class DatasetWriter(object):
     def write_related_data(self, objects, path):
         if not os.path.exists(path):
             os.makedirs(path)
-
         for obj in objects:
             self.copy_associated_files(path, obj)
 
     def copy_associated_files(self, destination, obj):
-            data_dir = self.cache.path / 'data'
+            data_dir = self.temp_dir
 
             for suffix in self.associated_files.values():
                 for prefix in self.related_data_prefixes.values():
@@ -244,7 +224,7 @@ class DatasetWriter(object):
 
         with contextlib2.ExitStack() as tf_record_close_stack:
             output_tfrecords = [
-                tf_record_close_stack.enter_context(tf.python_io.TFRecordWriter(file_name))
+                tf_record_close_stack.enter_context(tf.io.TFRecordWriter(file_name))
                 for file_name in tf_record_output_filenames
             ]
 
