@@ -13,8 +13,6 @@ import yaml
 from urllib.request import urlopen
 from urllib.error import URLError
 from pathlib import Path
-from pkg_resources import iter_entry_points
-from click_plugins import with_plugins
 from ravenml.train.interfaces import TrainInput, TrainOutput
 from ravenml.utils.question import cli_spinner
 from ravenml.utils.aws import upload_file_to_s3, upload_dict_to_s3_as_json

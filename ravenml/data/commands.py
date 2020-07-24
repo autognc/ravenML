@@ -7,8 +7,6 @@ Command group for dataset exploration in ravenml.
 
 import click
 import pydoc
-from pkg_resources import iter_entry_points
-from click_plugins import with_plugins
 from colorama import Fore
 from ravenml.utils.imageset import get_imageset_names, get_imageset_metadata
 from ravenml.utils.dataset import get_dataset_names, get_dataset_metadata

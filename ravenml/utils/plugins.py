@@ -34,3 +34,5 @@ class LazyPluginGroup(click.Group):
                 formatter.write_dl((name, "") for name in commands)
 
 
+def raise_parameter_error(option, hint: str):
+    raise click.exceptions.BadParameter(option, param=option, param_hint=hint)
