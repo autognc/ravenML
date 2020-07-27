@@ -132,9 +132,9 @@ class CreateInput(object):
         for imageset in imageset_list:
             bucketConfig = get_config()
             image_bucket_name = bucketConfig.get('image_bucket_name')
-            status = download_prefix(image_bucket_name, imageset, self.imageset_cache, 'imagesets/')
-            if(not status):
-                raise Exception("Full imageset for " + imageset + " was not able to be downloaded")
+            imageset_path = 'imagesets/' + imageset
+            self.imageset_cache.ensure_subpath_exists(imageset_path)
+            download_prefix(image_bucket_name, imageset, self.imageset_cache, imageset_path)
             self.imageset_paths.append(self.imageset_cache.path / 'imagesets' / imageset)
 
 class CreateOutput(object):

@@ -1,6 +1,7 @@
 import os
 import boto3
 import json
+import subprocess
 from pathlib import Path
 from ravenml.utils.config import get_config
 from ravenml.utils.local_cache import RMLCache
@@ -39,26 +40,14 @@ def download_prefix(bucket_name: str, prefix: str, cache: RMLCache, custom_path:
     Returns:
         bool: T if successful, F if no objects found
     """
-    S3 = boto3.resource('s3')
-    bucket = S3.Bucket(bucket_name)
-    # filter bucket contents by prefix (add / to avoid accidental matching of invalid substrings
-    # of valid dataset names)
-    i = 0
-    for obj in bucket.objects.filter(Prefix = prefix + '/'):
-        # check to be sure object is not a folder by peeking at its last character
-        i+=1
-        if obj.key[-1] != '/':
-            if custom_path:
-                path_name = custom_path + obj.key
-            else:
-                path_name = obj.key
-            if not cache.subpath_exists(path_name):
-                subpath = os.path.dirname(path_name)
-                cache.ensure_subpath_exists(subpath)
-                storage_path = cache.path / Path(path_name)
-                bucket.download_file(obj.key, str(storage_path))
-    # T if objects were found and downloaded, F if not
-    return i != 0
+
+    s3_uri = 's3://' + bucket_name + '/' + prefix 
+    if custom_path:
+        local_path = cache.path / custom_path
+    else:
+        local_path = cache.path
+    
+    subprocess.call(["aws", "s3", "sync", s3_uri, local_path, '--quiet'])
 
 ### UPLOAD FUNCTIONS ###
 def upload_file_to_s3(prefix: str, file_path: Path, alternate_name=None):
@@ -88,7 +77,7 @@ def upload_dict_to_s3_as_json(s3_path: str, obj: dict):
     model_bucket = S3.Bucket(config['model_bucket_name'])   
     model_bucket.put_object(Body=json.dumps(obj, indent=2), Key=s3_path+'.json')
 
-def upload_directory(bucket_name, directory, num_threads=20):
+def upload_directory(bucket_name, prefix, local_path):
     """Recursively uploads a directory to S3
     
     Args:
@@ -98,38 +87,6 @@ def upload_directory(bucket_name, directory, num_threads=20):
             prefix for all uploaded files
         num_threads (int, optional): Defaults to 20.
     """
-    s3 = boto3.resource('s3')
-
-    def upload_file(queue):
-        while True:
-            obj = queue.get()
-            if obj is None:
-                break
-            abspath, s3_path = obj
-            s3.meta.client.upload_file(abspath, bucket_name, s3_path)
-            queue.task_done()
-
-    # create a queue for objects that need to be uploaded
-    # and spawn threads to upload them concurrently
-    upload_queue = Queue(maxsize=0)
-    workers = []
-    for worker in range(num_threads):
-        worker = Thread(target=upload_file, args=(upload_queue, ))
-        worker.setDaemon(True)
-        worker.start()
-        workers.append(worker)
-
-    for root, _, files in os.walk(directory):
-        for file in files:
-            abspath = os.path.join(root, file)
-            relpath = os.path.relpath(abspath, directory)
-            s3_path = os.path.basename(directory) + "/" + relpath
-            upload_queue.put((abspath, s3_path))
-
-    # wait for the queue to be empty, then join all threads
-    upload_queue.join()
-    for _ in range(num_threads):
-        upload_queue.put(None)
-    for worker in workers:
-        worker.join()
     
+    s3_uri = 's3://' + bucket_name + '/' + prefix 
+    subprocess.call(["aws", "s3", "sync", local_path, s3_uri, '--quiet'])

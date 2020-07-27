@@ -61,9 +61,7 @@ def data(ctx):
     pass
 
 ## Dataset Creation Commands ##
-# TODO: determine interfaces for this command
 @data.group(cls=LazyPluginGroup, entry_point_name='ravenml.plugins.data', help='Create a new dataset.')
-@with_plugins(iter_entry_points('ravenml.plugins.data'))
 @click.pass_context
 @config_opt
 def create(ctx: click.Context, config: str):
@@ -91,7 +89,7 @@ def process_result(ctx: click.Context, result: CreateOutput, config: str):
         if (ci.upload):
             bucketConfig = get_config()
             bucket = bucketConfig["dataset_bucket_name"]
-            cli_spinner("Uploading dataset to S3...", upload_directory, bucket_name=bucket, directory=dataset_path)
+            cli_spinner("Uploading dataset to S3...", upload_directory, bucket_name=bucket, prefix=dataset_name, local_path=dataset_path)
         
         if (ci.delete_local):
             cli_spinner("Deleting " + dataset_name + " dataset...", shutil.rmtree, dataset_path)
