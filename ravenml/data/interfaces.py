@@ -28,7 +28,6 @@ TEST_DIR = 'test'
 METADATA_PREFIX = 'meta_'
 TEMP_DIR_PREFIX = 'datasets/temp'
 
-
 class CreateInput(object):
     """Represents a dataset creation input. Contains all plugin-independent
     information necessary for training. Plugins can define their own behavior
@@ -71,21 +70,33 @@ class CreateInput(object):
         
         ## Set up Imageset
         # prompt for dataset if not provided
-        imageset_list = config.get('imageset')
-        imageset_options = get_imageset_names()
-        if imageset_list is None:
-            imageset_list = user_selects('Choose imageset:', imageset_options, selection_type="checkbox")
-        else: 
-            for imageset in imageset_list:
-                if imageset not in imageset_options:
-                    hint = 'imageset name, no such imageset exists on S3'
-                    raise click.exceptions.BadParameter(imageset_list, param=imageset_list, param_hint=hint)
+        if not config.get('local'):
+            imageset_list = config.get('imageset')
+            imageset_options = get_imageset_names()
+            if imageset_list is None:
+                imageset_list = user_selects('Choose imageset:', imageset_options, selection_type="checkbox")
+            else:
+                for imageset in imageset_list:
+                    if imageset not in imageset_options:
+                        hint = 'imageset name, no such imageset exists on S3'
+                        raise click.exceptions.BadParameter(imageset_list, param=imageset_list, param_hint=hint)
 
-        ## Download imagesets
-        self.imageset_cache.ensure_subpath_exists('imagesets')            
-        self.imageset_paths = []                
-        self.download_imagesets(imageset_list)
-    
+            ## Download imagesets
+            self.imageset_cache.ensure_subpath_exists('imagesets')
+            self.imageset_paths = []
+            self.download_imagesets(imageset_list)
+        else:
+            imageset_paths = config.get('imageset')
+            imageset_list = []
+            if imageset_paths is None:
+                raise click.exceptions.BadParameter(config, param=config, param_hint='config, no "imageset" filepaths. Config was')
+            for imageset in imageset_paths:
+                if not os.path.isdir(imageset):
+                    raise click.exceptions.BadParameter(config, param=config, param_hint='config, invalid "imageset" path: ' + imageset + ' Config was') 
+                if os.path.basename(imageset):
+                    imageset_list.append(os.path.basename(imageset))
+            self.imageset_paths = [Path(imageset_path) for imageset_path in imageset_paths]
+
         ## Set up Basic Metadata
         # TODO: add environment description, git hash, etc
         self.metadata = config.get('metadata', {})
@@ -108,7 +119,7 @@ class CreateInput(object):
 
         # handle automatic metadata fields
         self.metadata['date_started_at'] = datetime.utcnow().isoformat() + "Z"
-        self.metadata['imagesets_used'] = imageset_list
+        self.metadata['imagesets_used'] = imageset_list if imageset_list else self.imageset_paths
         
         ## Set up fields for plugin use
         # NOTE: plugins should overwrite the architecture field to something
@@ -137,10 +148,7 @@ class CreateInput(object):
             download_prefix(image_bucket_name, imageset, self.imageset_cache, imageset_path)
             self.imageset_paths.append(self.imageset_cache.path / 'imagesets' / imageset)
 
-class CreateOutput(object):
-    
-    def __init__(self):
-        self.a = "s"
+class CreateOutput(object): pass
 
 class Dataset(object):
     """Represents a training dataset.
