@@ -3,6 +3,7 @@ import shutil
 import pandas as pd
 import json
 import sys
+from random import shuffle
 from queue import Queue
 from threading import Thread
 from pathlib import Path
@@ -11,6 +12,19 @@ from ravenml.utils.question import cli_spinner, user_selects, user_confirms, use
 from ravenml.utils.config import get_config
 
 def default_filter(tags_df, filter_metadata):
+    """Method leads user through interactive filtering through image_ids based on 
+        image tags
+
+    Args:
+        tags_df (DataFrame): a pandas DataFrame storing image IDs and
+            associated tags; its structure is:
+                index (rows) = image ID (str)
+                column headers = the tags themselves
+                columns = True/False values for whether the image has the tag
+                    in that column header
+        filter_metadata (dict): dict which will hold the sets that is created
+            through the filtering process
+    """
     sets = {}
     # outer loop to determine how many sets the user will create
     try:
@@ -161,7 +175,6 @@ def or_filter(tags_df, filter_tags):
         subset='index', keep='first').set_index('index')
     return result
 
-
 def join_sets(sets):
     """Returns the union of a set of datasets
     
@@ -193,55 +206,29 @@ def join_sets(sets):
         subset='index', keep='first').set_index('index')
     return result
 
-def default_load_image_ids(metadata_prefix, imageset_paths):
-    """Loads all image metadata JSONs and loads their tags
-
-    Returns:
-        DataFrame: a pandas DataFrame storing image IDs and associated tags;
-            index (rows) = image ID (str)
-            column headers = the tags themselves
-            columns = True/False values for whether the image has the tag in
-                in that column header
-    """
-    tags_df = pd.DataFrame()
-    for data_dir in imageset_paths:
-        for dir_entry in os.scandir(data_dir):
-            if not dir_entry.name.startswith(metadata_prefix):
-                continue
-            image_id = dir_entry.name.replace(metadata_prefix, '').replace(".json", '')
-            with open(dir_entry.path, "r") as read_file:
-                data = json.load(read_file)
-            tag_list = data.get("tags", ['untagged'])
-            if len(tag_list) == 0:
-                tag_list = ['untagged']
-            temp = pd.DataFrame(
-                dict(zip(tag_list, [True] * len(tag_list))), index=[(data_dir, image_id)])
-            tags_df = pd.concat((tags_df, temp), sort=False)
-        tags_df = tags_df.fillna(False)
-
-    return tags_df
-
-def copy_data_locally(images, dest_dir,
-                      condition_func, num_threads=20):
-    """Copies data from a local source into Jigsaw given some condition
+def copy_data_locally(images: list, destination_dir: Path, associated_files: dict, num_threads=20):
+    """Copies files associated with provided image list into a destination 
+        directory locally
     
     Args:
-        source_dir (str or pathlib `Path`): the source directory from which
-            data should be copied
-        condition_func (function, optional): a function that uses the filename
-            to determine whether data should be copied. This allows for only
-            copying portions of the source data if desired. Defaults to True
-            for all filenames.
+        images (list): list of tuples with paths to a local directory paired 
+            with an image id located in that directory
+        destination_dir (Path): directory where data will be copied to
+        associated_files (dict): expected to follow the format:
+            { 'filetype' (String): ('prefix', 'suffix') (tuple) }
+            any number of dict entries are allowed, and lists of 
+            tuples for the values are also allowed.
         num_threads (int, optional): Defaults to 20. Number of threads
             performing concurrent copies.
     """
 
+    # function used to copy
     def copy_object(queue):
         while True:
             filepath = queue.get()
             if filepath is None:
                 break
-            shutil.copy(filepath, dest_dir.absolute())
+            shutil.copy(filepath, destination_dir.absolute())
             queue.task_done()
 
     # create a queue for objects that need to be copied
@@ -254,13 +241,71 @@ def copy_data_locally(images, dest_dir,
         worker.start()
         workers.append(worker)
 
-    for imageset in set([image[0] for image in images]):
-        for file in imageset.iterdir():
-            if(os.path.isfile(file) and condition_func(imageset, file.name) and not (dest_dir / file.name).exists()):
-                copy_queue.put(file.absolute())
+    # gets all associated prefix-suffix pairs from 
+    # associated_files dict 
+    file_types = []
+    for file_type in associated_files.values():
+        if type(file_type) is tuple:
+            file_types.append(file_type)
+        elif type(file_type) is list:
+            file_types += file_type
+    file_types = set(file_types)
 
+    # iterates through each image path, and copies each associated file
+    for image in images:
+        for file_type in file_types:
+            filepath = image[0] / str(file_type[0] + image[1] + file_type[1])
+            if os.path.isfile(filepath):
+                copy_queue.put(filepath.absolute())
+
+    # joins all threads
     copy_queue.join()
     for _ in range(num_threads):
         copy_queue.put(None)
     for worker in workers:
         worker.join()
+
+def split_data(obj_list, test_percent=.2):
+    """Splits obj_list into test/dev sets
+    
+    Args:
+        obj_list (list): list of objects to divide into test/dev
+        test_percent (int): percentage of objects in the test set
+    
+    Returns:
+        tuple of two lists. The first list is test, second dev
+    """
+    if len(obj_list) == 0:
+        raise Exception("Empty object list passed.")
+    if len(obj_list) == 1:
+        raise Exception(
+            "Object list of length 1 passed. Can't build test and dev set with this."
+        )
+
+    shuffle(obj_list)
+    index_to_split_on = max(1, int(len(obj_list) * test_percent))
+
+    test = obj_list[:index_to_split_on]
+    dev = obj_list[index_to_split_on:]
+
+    return (test, dev)
+
+def read_json_metadata(dir_entry, image_id):
+    """Reads a json metadata file and creates a dataframe
+        with the tags found in the metadata
+    
+    Args:
+        dir_entry (Path): path to metadata file
+        image_id (String): image_id of metadata file
+    
+    Returns:
+        dataframe with image_id key and True/False values
+        for each tag.
+    """
+    with open(dir_entry.path, "r") as read_file:
+        data = json.load(read_file)
+    tag_list = data.get("tags", ['untagged'])
+    if len(tag_list) == 0:
+        tag_list = ['untagged']
+    
+    return pd.DataFrame(dict(zip(tag_list, [True] * len(tag_list))), index=[(Path(os.path.dirname(dir_entry)), image_id)])

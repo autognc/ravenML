@@ -36,6 +36,8 @@ def download_prefix(bucket_name: str, prefix: str, cache: RMLCache, custom_path:
         bucket_name (str): name of bucket
         prefix (str): prefix to filter on
         cache (RMLCache): cache to download files to
+        custom_path (str, optional): custom subpath in cache
+            to download files to
     
     Returns:
         bool: T if successful, F if no objects found
@@ -82,10 +84,8 @@ def upload_directory(bucket_name, prefix, local_path):
     
     Args:
         bucket_name (str): the name of the S3 bucket to upload to
-        directory (str): the absolute path of a directory whose contents
-            should be uploaded to S3; the directory name is used as the S3
-            prefix for all uploaded files
-        num_threads (int, optional): Defaults to 20.
+        prefix (str): the name of the prefix to be uploaded to
+        local_path (str): local path to directory being uploaded
     """
     
     s3_uri = 's3://' + bucket_name + '/' + prefix 

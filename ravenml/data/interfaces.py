@@ -33,6 +33,22 @@ class CreateInput(object):
     information necessary for training. Plugins can define their own behavior
     for getting additional information.
 
+    Variables:
+        config (dict): all config fields supplied by user
+        plugin_cache (RMLCache): cache where plugin can create temp files, and 
+            where datasets are stored locally by default
+        imageset_cache (RMLCache): cache that stores imagesets locally
+        dataset_path (Path): path to where dataset should be written to
+        imageset_paths (list): list of paths to imagesets being used
+        metadata (dict): holds dataset metadata, currently: created_by, comments,
+            dataset_name, date_started_at, imagesets_used, plugin_metadata
+        plugin_metadata (dict): holds plugin metadata, currently: plugin_name,
+            temp_dir
+        kfolds (int): number of folds user wants in dataset
+        test_percent (float): percentage of data should be in test set
+        upload (bool): whether the user wants to upload to s3 or not
+        delete_local (bool): whether the user wants to delete the local dataset
+            or not
     """
     def __init__(self, config:dict=None, plugin_name:str=None):
 
@@ -43,7 +59,6 @@ class CreateInput(object):
         self.config = config
         
         ## Set up Local Cache
-        # TODO: maybe create the subdir here?
         # currently the cache_name subdir is only created IF the plugin places files there
         self.plugin_cache = RMLCache(f'data_{plugin_name}')
         self.imageset_cache = RMLCache()
@@ -69,12 +84,13 @@ class CreateInput(object):
             self.dataset_path = dp
         
         ## Set up Imageset
-        # prompt for dataset if not provided
+        # s3 download imagesets
         if not config.get('local'):
             imageset_list = config.get('imageset')
             imageset_options = get_imageset_names()
+            # prompt for imagesets if not provided
             if imageset_list is None:
-                imageset_list = user_selects('Choose imageset:', imageset_options, selection_type="checkbox")
+                imageset_list = user_selects('Choose imagesets:', imageset_options, selection_type="checkbox")
             else:
                 for imageset in imageset_list:
                     if imageset not in imageset_options:
@@ -85,6 +101,7 @@ class CreateInput(object):
             self.imageset_cache.ensure_subpath_exists('imagesets')
             self.imageset_paths = []
             self.download_imagesets(imageset_list)
+        # local imagesets
         else:
             imageset_paths = config.get('imageset')
             imageset_list = []
@@ -105,21 +122,22 @@ class CreateInput(object):
             self.metadata['created_by'] = user_input('Please enter your first and last name:')
         if not self.metadata.get('comments'):
             self.metadata['comments'] = user_input('Please enter descriptive comments about this training:')
-        
-        self.kfolds = config['kfolds'] if config.get('kfolds') else 0
-        self.test_percent = config['test_percent'] if config.get('test_percent') else .2
-        if config.get('filter'):
-            self.metadata['filter'] = config['filter']
-        else:
-            self.metadata['filter'] = False
-
-        # Initialize Directory for Dataset    
-        self.metadata['dataset_name'] = config['dataset_name'] if config.get('dataset_name') else user_input(message="What would you like to name this dataset?")
-        os.makedirs(self.dataset_path / self.metadata['dataset_name'], exist_ok=True)  
-
         # handle automatic metadata fields
         self.metadata['date_started_at'] = datetime.utcnow().isoformat() + "Z"
         self.metadata['imagesets_used'] = imageset_list if imageset_list else self.imageset_paths
+        
+        # handle non-metadata user defined fields
+        self.kfolds = config['kfolds'] if config.get('kfolds') else 0
+        self.test_percent = config['test_percent'] if config.get('test_percent') else .2
+
+        # Initialize Directory for Dataset    
+        self.metadata['dataset_name'] = config['dataset_name'] if config.get('dataset_name') else user_input(message="What would you like to name this dataset?")
+        dir_name = self.dataset_path / self.metadata['dataset_name']
+        if os.path.isdir(dir_name):
+            shutil.rmtree(dir_name)
+            os.mkdir(dir_name)
+        else:
+            os.mkdir(dir_name)  
         
         ## Set up fields for plugin use
         # NOTE: plugins should overwrite the architecture field to something
@@ -135,20 +153,32 @@ class CreateInput(object):
         else:
             self.plugin_config = config.get('plugin')
         
+        # Set up what should be done after dataset creation
         self.upload = config["upload"] if 'upload' in config.keys() else user_confirms(message="Would you like to upload the dataset to S3?")
         self.delete_local = config["delete_local"] if 'delete_local' in config.keys() else user_confirms(message="Would you like to delete your " + self.metadata['dataset_name'] + " dataset?")
 
     @cli_spinner_wrapper("Downloading imagesets from S3...")
     def download_imagesets(self, imageset_list):
+        """Util for downloading all imagesets needed for imageset creation.
+
+        Args:
+            imageset_list (list): list of imageset names needed
+        """
+        # Get image bucket name
+        bucketConfig = get_config()
+        image_bucket_name = bucketConfig.get('image_bucket_name')
+        # Downloads each imageset and appends local path to 'self.imageset_paths'
         for imageset in imageset_list:
-            bucketConfig = get_config()
-            image_bucket_name = bucketConfig.get('image_bucket_name')
             imageset_path = 'imagesets/' + imageset
             self.imageset_cache.ensure_subpath_exists(imageset_path)
             download_prefix(image_bucket_name, imageset, self.imageset_cache, imageset_path)
             self.imageset_paths.append(self.imageset_cache.path / 'imagesets' / imageset)
 
 class CreateOutput(object): pass
+"""Represents a dataset creation output. Currently all information needed
+    to handle dataset after creation can be found in the CreateInput 
+    object which is captured as a click callback. Thus, this is an empty class.
+"""
 
 class Dataset(object):
     """Represents a training dataset.

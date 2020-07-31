@@ -65,6 +65,12 @@ def data(ctx):
 @click.pass_context
 @config_opt
 def create(ctx: click.Context, config: str):
+    """Creates CreateInput from config and sends to plugin
+    
+    Args:
+        ctx (Context): click context object
+        config (str): user config
+    """
     if config:
     # load config
         try:
@@ -79,18 +85,32 @@ def create(ctx: click.Context, config: str):
 @create.resultcallback()
 @click.pass_context
 def process_result(ctx: click.Context, result: CreateOutput, config: str):
+    """Processes output of dataset creation
+    
+    Args:
+        ctx (Context): click context object
+        result (CreateOutput): result of dataset creation plugin
+        config (str): original config provided by user
+    Returns:
+        result (CreateOutput): result of dataset creation plugin
+    """
     if result is not None:
+        # Gets dataset information from CreateInput
         ci = ctx.obj
         dataset_name = ci.metadata['dataset_name']
         dataset_path = ci.dataset_path / dataset_name
         temp_dir = ci.plugin_metadata['temp_dir_path']
+
+        # Deletes temp directory
         cli_spinner("Deleting temp directory...", shutil.rmtree, temp_dir)
 
+        # Uploads dataset to S3
         if (ci.upload):
             bucketConfig = get_config()
             bucket = bucketConfig["dataset_bucket_name"]
             cli_spinner("Uploading dataset to S3...", upload_directory, bucket_name=bucket, prefix=dataset_name, local_path=dataset_path)
         
+        # Deletes local dataset
         if (ci.delete_local):
             cli_spinner("Deleting " + dataset_name + " dataset...", shutil.rmtree, dataset_path)
             
