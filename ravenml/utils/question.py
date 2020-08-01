@@ -157,6 +157,8 @@ def cli_spinner_wrapper(text):
                 raise
             spinner.succeed(text=text + 'Complete.')
             return result
+        wrapper.inherit_decorator = cli_spinner_wrapper
+        wrapper.args = text
         return wrapper
     return spinner
     

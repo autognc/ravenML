@@ -7,7 +7,42 @@ from ravenml.utils.question import cli_spinner, cli_spinner_wrapper
 from ravenml.utils.config import get_config
 from ravenml.data.helpers import default_filter, copy_data_locally, split_data, read_json_metadata
 
-class DatasetWriter(object):
+class DecoratorSuperClass:
+    """Superclass for DatasetWriter. Allows for decorators
+        from one class to be inherited to all subclasses. Subclasses can 
+        overload their decorators if desired.
+
+        Any decorator that is to be used on subclasses of this class must
+        set the attribute 'inherit_decorator' to the decorator function itself
+        in the inner function that it is passing. 
+
+        This class supports decorators with parameters, but requires that they
+        be set as attributes of the passed function as 'args' and 'kwargs'.
+    """
+    def __init_subclass__(cls):
+        decorator_registry = getattr(cls, "_decorator_registry", {}).copy()
+        cls._decorator_registry = decorator_registry
+        # annotate newly decorated methods in the current subclass:
+        for name, obj in cls.__dict__.items():
+            if getattr(obj, "inherit_decorator", False) and not name in decorator_registry:
+                decorator_registry[name] = (obj.inherit_decorator, getattr(obj, "args", False), getattr(obj, "kwargs", False))
+        # decorate methods annotated in the registry
+        # decorator[0] = decorator function
+        # decorator[1] = decorator args
+        # decorator[2] = decorator kwargs
+        for name, decorator in decorator_registry.items():
+            if name in cls.__dict__ and getattr(getattr(cls,name), "inherit_decorator", None) != decorator[0]:
+                if decorator[1] or decorator[2]:
+                    if decorator[2]:
+                        setattr(cls, name, decorator[0](decorator[1], decorator[2])(cls.__dict__[name]))
+                    else:
+                        setattr(cls, name, decorator[0](decorator[1])(cls.__dict__[name]))
+                elif not decorator[1]:
+                    setattr(cls, name, decorator[0](decorator[2])(cls.__dict__[name]))
+                else:
+                    setattr(cls, name, decorator[0](cls.__dict__[name]))
+
+class DatasetWriter(DecoratorSuperClass):
     """Interface for creating datasets, methods are in order of what is expected to be 
         called by the plugins
 
@@ -61,6 +96,8 @@ class DatasetWriter(object):
         """
 
         self.associated_files = kwargs['associated_files']
+        if not self.associated_files.get('metadata'):
+            raise Exception("Associated files must contain a 'metadata' key with a corresponding prefix-suffix pair")
         
         metadata = create.metadata
         self.num_folds = create.kfolds
@@ -93,6 +130,7 @@ class DatasetWriter(object):
         """
         raise NotImplementedError
 
+    @cli_spinner_wrapper("Copying data into temp folder...")
     def load_data(self):
         """Method goes through all image_ids and copies related data from imagesets
             to temp directory.
@@ -111,6 +149,7 @@ class DatasetWriter(object):
         """
         raise NotImplementedError
 
+    @cli_spinner_wrapper("Writing out dataset locally...")
     def write_dataset(self, obj_list: list):
         """Main driver, writes dataset based on objects passed from construct_all
 
@@ -118,13 +157,15 @@ class DatasetWriter(object):
         """
         raise NotImplementedError
 
+    @cli_spinner_wrapper("Writing out metadata locally...")
     def write_metadata(self):
         """Writes out a metadata file
 
         Args:
         """
         raise NotImplementedError
-
+    
+    @cli_spinner_wrapper("Writing out additional files...")
     def write_additional_files(self):
         """Writes out additional files
 
@@ -218,7 +259,6 @@ class DefaultDatasetWriter(DatasetWriter):
         """
         self.image_ids = default_filter(self.tags_df, self.filter_metadata)
 
-    @cli_spinner_wrapper("Copying data into temp folder...")
     def load_data(self):
         """Method is expected to be called after 'load_image_ids' and 'interactive_filter' if filtering is
             desired. Method goes through each image_id and copies its corresponing files into a temp directory
@@ -233,7 +273,6 @@ class DefaultDatasetWriter(DatasetWriter):
         """
         copy_data_locally(self.image_ids, self.temp_dir, self.associated_files)
     
-    @cli_spinner_wrapper("Writing out metadata locally...")
     def write_metadata(self):
         """Method writes out metadata in JSON format in file 'metadata.json',
             in root directory of dataset.
@@ -265,7 +304,6 @@ class DefaultDatasetWriter(DatasetWriter):
         with open(metadata_filepath, 'w') as outfile:
             json.dump(metadata, outfile) 
 
-    @cli_spinner_wrapper("Writing out dataset locally...")
     def write_dataset(self, obj_list: list):
         """Method is parent function for writing out complete dataset. Method first
             creates 'test' and 'dev' subsets. The 'test' subset gets all related files
