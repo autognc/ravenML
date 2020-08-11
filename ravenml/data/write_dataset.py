@@ -1,5 +1,6 @@
 import os, shutil, time, json
 import pandas as pd
+from random import sample
 from pathlib import Path
 from datetime import datetime
 from ravenml.data.interfaces import CreateInput
@@ -191,7 +192,7 @@ class DefaultDatasetWriter(DatasetWriter):
 
         self.image_ids = self.tags_df.index.tolist()
 
-    def interactive_filter(self):
+    def interactive_filter(self, setSizeFilter: dict=None, tagFilter: bool=False):
         """Method is expected to only be called after 'load_image_ids' is called, as it relies on 
             'self.tags_df' to be prepopulated. Method prompts user through interactive filtering 
             of image_ids based on their tags.
@@ -200,11 +201,51 @@ class DefaultDatasetWriter(DatasetWriter):
             to be used after filtering. 'self.filter_metadata' also needs to be set to a dict containing
             set-names as keys and lists of image_ids as values.
 
+        Args:
+            setSizeFilter (dict): contains how many images in each imagest to use, 
+                format: { imageset_name (str): num_images (int) } 
+            tagFilter (bool): contains bool on whether or not to do filtering by tags 
         Variables Needed:
             tags_df (dataframe): needs to be set for the 'default_filter' function to be able to filter by tags
                 (provided by 'load_image_ids')
         """
-        self.image_ids = default_filter(self.tags_df, self.filter_metadata)
+        if(setSizeFilter):
+            # Gets dict of image_ids associated with each imageset
+            imageset_names = [os.path.basename(path) for path in self.imageset_paths ]
+            imageset_to_image_ids_dict = { name: [] for name in imageset_names}
+            for image_id in self.image_ids:
+                if os.path.basename(image_id[0]) in imageset_names:
+                    imageset_to_image_ids_dict[os.path.basename(image_id[0])].append(image_id)
+            
+            # Goes through specified filtering amounts for each imageset and prompts for missing values
+            filtered_image_ids = []
+            for imageset in imageset_names:
+                subsetSize = setSizeFilter[imageset] if setSizeFilter.get(imageset) else int(user_input(
+                    message=f'How many images from {imageset} would you like to use?'))
+                if subsetSize < 0 or subsetSize > len(imageset_to_image_ids_dict[imageset]):
+                    raise Exception(f'Invalid number ({subsetSize}) of images to use from {imageset}')
+                filtered_image_ids+=sample(imageset_to_image_ids_dict[imageset],subsetSize)
+            
+            # Updates tags_df and image_ids with the new information
+            self.tags_df = self.tags_df.loc[filtered_image_ids]
+            self.image_ids = filtered_image_ids
+        
+        if(tagFilter):
+            self.image_ids = default_filter(self.tags_df, self.filter_metadata)
+
+    def load_data(self):
+        """Method is expected to be called after 'load_image_ids' and 'interactive_filter' if filtering is
+            desired. Method goes through each image_id and copies its corresponing files into a temp directory
+            which will be later used by the plugin to create their dataset.
+
+            If overloaded, method is expected to copy all files the plugin needs into the provided 'temp_dir'.
+
+        Variables Needed:
+            image_ids (list): needed to find what needs to be copied (provided by 'load_image_ids'/'interactive_filter')
+            temp_dir (Path): needed to know where to copy to (provided by 'create' input)
+            associated_files (dict): needed to know what files need to be copied (provided by plugin)
+        """
+        copy_data_locally(self.image_ids, self.temp_dir, self.associated_files)
     
     def write_metadata(self):
         """Method writes out metadata in JSON format in file 'metadata.json',
