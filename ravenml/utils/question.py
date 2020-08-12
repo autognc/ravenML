@@ -157,7 +157,7 @@ def cli_spinner_wrapper(text):
 class DecoratorSuperClass:
     """Superclass for DatasetWriter. Allows for decorators
         from one class to be inherited to all subclasses. Subclasses can 
-        overload their decorators if desired.
+        override their decorators if desired.
 
         Any decorator that is to be used on subclasses of this class must
         set the attribute 'inherit_decorator' to the decorator function itself

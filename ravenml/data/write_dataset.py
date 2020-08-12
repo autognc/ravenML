@@ -64,7 +64,7 @@ class DatasetWriter(DecoratorSuperClass):
         self.tags_df = pd.DataFrame()
         self.image_ids = None
         self.filter_metadata = {"groups": []}
-        self.obj_list = []
+        self.obj_dict = {}
     
     def load_image_ids(self):
         """Method goes through imagesets and is expected to populate the 'tags_df'
@@ -85,11 +85,11 @@ class DatasetWriter(DecoratorSuperClass):
 
     def construct_all(self):
         """Method should create objects from the image_ids given with whatever
-            information is needed for the write_dataset method to use
+            information is needed for the write_dataset method to use. Is required 
+            to set 'obj_dict' to be a dictionary with image_id keys and the constructed
+            objects as values.
 
         Args:
-        Returns:
-            object list of whatever data will be written in the dataset
         """
         raise NotImplementedError
 
@@ -119,11 +119,11 @@ class DatasetWriter(DecoratorSuperClass):
 
 class DefaultDatasetWriter(DatasetWriter):
     """Default Interface for creating datasets, methods are in order of what is expected to be 
-        called by the plugins. Plugin is expected to overload 'construct_all', 'export_data',
+        called by the plugins. Plugin is expected to override 'construct_all', 'export_data',
         and 'write_additional_files', if the plugin expects to call 'write_dataset'. 
 
     Methods (not in DatasetWriter):
-        write_data (objects, path, split_type): method that is overloaded by the plugin, is called
+        write_out_train_split (objects, path, split_type): method that is overridden by the plugin, is called
             on by 'write_out_complete_set' in this implementation to write the contents of the objects
             created by 'construct_all'
         write_out_test_set (path (Path), data (list)): helper method for this implementation of
@@ -141,9 +141,10 @@ class DefaultDatasetWriter(DatasetWriter):
         """
         super().__init__(create)
 
-    def write_data(self, objects, path, split_type, *args, **kwargs):
-        """Method should be overloaded by plugin if default 'write_dataset' implementation is to be called.
-            Method writes data in plugin-specific way given objects and the path to write to
+    def write_out_train_split(self, objects, path, split_type, *args, **kwargs):
+        """Method should be overridden by plugin if default 'write_dataset' implementation is to be called.
+            Method writes data in plugin-specific way, given objects and the path to write to. The train
+            split includes training data and validation/development data depending on the split type.
 
         Args:
             objects (object): objects made by 'construct_all' that are used to write data
@@ -160,7 +161,7 @@ class DefaultDatasetWriter(DatasetWriter):
             name and the file is parsed to get tag information. Currently only json metadata files are
             supported in this default implementation.
 
-            If overloaded, method is expected to set 'self.tags_df' if wanting to support 'interactive_filter'.
+            If overridden, method is expected to set 'self.tags_df' if wanting to support 'interactive_filter'.
             'self.tags_df' should be set to a pandas dataframe created from a dict with tuple pairs: 
             (imageset_path (Path), image_id (String)) as keys and an array of True/False values for whether 
             the image_id has each corresponding tag. 'self.image_ids' is also expected to be set to a list of 
@@ -195,7 +196,7 @@ class DefaultDatasetWriter(DatasetWriter):
             'self.tags_df' to be prepopulated. Method prompts user through interactive filtering 
             of image_ids based on their tags.
 
-            If overloaded, method is expected to set 'self.image_ids' to whatever image_ids are still
+            If overridden, method is expected to set 'self.image_ids' to whatever image_ids are still
             to be used after filtering. 'self.filter_metadata' also needs to be set to a dict containing
             set-names as keys and lists of image_ids as values.
 
@@ -209,7 +210,7 @@ class DefaultDatasetWriter(DatasetWriter):
         """Method writes out metadata in JSON format in file 'metadata.json',
             in root directory of dataset.
 
-            If overloaded, there are no expectations.
+            If overridden, there are no expectations.
 
         Variables Needed:
             dataset_name (str): the name of the dataset (provided by 'create' input)
@@ -240,25 +241,25 @@ class DefaultDatasetWriter(DatasetWriter):
         """Method is parent function for writing out complete dataset. Method first
             creates 'test' and 'dev' subsets. The 'test' subset gets all related files
             to it copied into a test folder. The 'dev' subset calls 'write_out_complete_set'
-            in the 'splits/complete' directory. Note that prior to this method, obj_list
+            in the 'splits/complete' directory. Note that prior to this method, obj_dict
             should be set to a list of objects that are meant to be written.
 
-            If overloaded, there are no expectations, but note that the variables 'kfolds'
+            If overridden, there are no expectations, but note that the variables 'kfolds'
             and 'test_percent' are provided for use.
         
         Args:
             associated_files (list): decides what files are to be copied for the test set
 
         Variables Needed:
-            obj_list (list): list of objects to be written in dataset
+            obj_dict (dict): dict of objects to be written in dataset
             dataset_path (Path): where dataset will be written (provided by 'create' input)
             dataset_name (str): the name of the dataset (provided by 'create' input)
         """
         dataset_path = self.dataset_path / self.dataset_name
         print(dataset_path)
 
-        test_subset, dev_subset = split_data(self.obj_list, test_percent=self.test_percent)
-
+        test_subset, dev_subset = split_data(list(self.obj_dict.items()), test_percent=self.test_percent)
+        
         # Test subset
         test_path = dataset_path / 'test'
         self.write_out_test_set(test_path, test_subset, associated_files)
@@ -269,7 +270,7 @@ class DefaultDatasetWriter(DatasetWriter):
         # write_out_fold(standard_path, fold, is_standard=True)
 
         complete_path = dev_path / 'complete'
-        self.write_out_complete_set(complete_path, dev_subset)
+        self.write_out_complete_set(complete_path, [data[1] for data in dev_subset])
 
     def write_out_test_set(self, path, data, associated_files):
         """Method is helper function for writing out dataset. Writes
@@ -277,7 +278,7 @@ class DefaultDatasetWriter(DatasetWriter):
             specified test path. Assumes objlist has 'image_filepath'
             and 'image_id' as keys.
 
-            If overloaded, there are no expectations.
+            If overridden, there are no expectations.
 
         Args:
             path (Path): Path to where data should be written
@@ -285,15 +286,16 @@ class DefaultDatasetWriter(DatasetWriter):
             associated_files (list): decides what files are to be copied for the test set
         """
         os.mkdir(path)
-        test_image_ids = [(Path(os.path.dirname(obj['image_filepath'])), obj['image_id']) for obj in data]
+        test_image_ids = [id[0] for id in data]
         copy_associated_files(test_image_ids, path, associated_files)
 
     def write_out_complete_set(self, path, data):
         """Method is helper function for writing out dataset. Creates a 
-            'train' subdirectory and calls for 'write_data' to write
-            test_data and _train_data.
+            'train' subdirectory and calls for 'write_out_train_split' to write
+            test_data and train_data. test_data is not the test set, but a validation
+            set to be used during training.
 
-            If overloaded, there are no expectations.
+            If overridden, there are no expectations.
 
         Args:
             path (Path): Path to where data should be written
@@ -305,5 +307,5 @@ class DefaultDatasetWriter(DatasetWriter):
 
         test_data, train_data = split_data(data, test_percent=self.test_percent)
 
-        self.write_data(train_data, data_path, split_type='train')
-        self.write_data(test_data, data_path, split_type='test')
+        self.write_out_train_split(train_data, data_path, split_type='train')
+        self.write_out_train_split(test_data, data_path, split_type='test')

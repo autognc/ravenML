@@ -206,7 +206,7 @@ def join_sets(sets):
         subset='index', keep='first').set_index('index')
     return result
 
-def copy_associated_files(images: list, destination_dir: Path, associated_files: dict, num_threads=20):
+def copy_associated_files(images: list, destination_dir: Path, associated_files: list, num_threads=20):
     """Copies files associated with provided image list into a destination 
         directory locally
     
