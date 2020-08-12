@@ -22,11 +22,7 @@ from colorama import Fore
 ### CONSTANTS ###
 # these should be used in all possible situations to protect us
 # in case they change in the future
-STANDARD_DIR = 'standard'
 FOLD_DIR_PREFIX = 'fold_'
-TEST_DIR = 'test'
-METADATA_PREFIX = 'meta_'
-TEMP_DIR_PREFIX = 'datasets/temp'
 
 class CreateInput(object):
     """Represents a dataset creation input. Contains all plugin-independent
@@ -42,8 +38,7 @@ class CreateInput(object):
         imageset_paths (list): list of paths to imagesets being used
         metadata (dict): holds dataset metadata, currently: created_by, comments,
             dataset_name, date_started_at, imagesets_used, plugin_metadata
-        plugin_metadata (dict): holds plugin metadata, currently: plugin_name,
-            temp_dir
+        plugin_metadata (dict): holds plugin metadata, currently: plugin_name
         kfolds (int): number of folds user wants in dataset
         test_percent (float): percentage of data should be in test set
         upload (bool): whether the user wants to upload to s3 or not
@@ -142,9 +137,7 @@ class CreateInput(object):
         ## Set up fields for plugin use
         # NOTE: plugins should overwrite the architecture field to something
         # more specific/useful since it is used to name the final uploaded model
-        self.plugin_cache.ensure_clean_subpath(TEMP_DIR_PREFIX)
-        self.plugin_cache.ensure_subpath_exists(TEMP_DIR_PREFIX)
-        self.metadata[plugin_name] = {'architecture': plugin_name, 'temp_dir_path': self.plugin_cache.path / TEMP_DIR_PREFIX}
+        self.metadata[plugin_name] = {'architecture': plugin_name}
         # plugins should only ACCESS the plugin_metadata attibute and add items. They should
         # NEVER assign to the attribute as it will break the reference to the overall metadata dict
         self.plugin_metadata = self.metadata[plugin_name]

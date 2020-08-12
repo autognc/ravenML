@@ -148,17 +148,44 @@ def cli_spinner(text, func, *args, **kwargs):
 def cli_spinner_wrapper(text):
     def spinner(func):
         def wrapper(*args, **kwargs):
-            spinner = Spinner(text=text, text_color="magenta")
-            spinner.start()
-            try:
-                result = func(*args,**kwargs)
-            except Exception:
-                spinner.succeed(text=text + 'Failed.')
-                raise
-            spinner.succeed(text=text + 'Complete.')
-            return result
+            return cli_spinner(text, func, *args, **kwargs)
         wrapper.inherit_decorator = cli_spinner_wrapper
         wrapper.args = text
         return wrapper
     return spinner
+
+class DecoratorSuperClass:
+    """Superclass for DatasetWriter. Allows for decorators
+        from one class to be inherited to all subclasses. Subclasses can 
+        overload their decorators if desired.
+
+        Any decorator that is to be used on subclasses of this class must
+        set the attribute 'inherit_decorator' to the decorator function itself
+        in the inner function that it is passing. 
+
+        This class supports decorators with parameters, but requires that they
+        be set as attributes of the passed function as 'args' and 'kwargs'.
+    """
+    def __init_subclass__(cls):
+        decorator_registry = getattr(cls, "_decorator_registry", {}).copy()
+        cls._decorator_registry = decorator_registry
+        # annotate newly decorated methods in the current subclass:
+        for name, obj in cls.__dict__.items():
+            if getattr(obj, "inherit_decorator", False) and not name in decorator_registry:
+                decorator_registry[name] = (obj.inherit_decorator, getattr(obj, "args", False), getattr(obj, "kwargs", False))
+        # decorate methods annotated in the registry
+        # decorator[0] = decorator function
+        # decorator[1] = decorator args
+        # decorator[2] = decorator kwargs
+        for name, decorator in decorator_registry.items():
+            if name in cls.__dict__ and getattr(getattr(cls,name), "inherit_decorator", None) != decorator[0]:
+                if decorator[1] or decorator[2]:
+                    if decorator[2]:
+                        setattr(cls, name, decorator[0](decorator[1], decorator[2])(cls.__dict__[name]))
+                    else:
+                        setattr(cls, name, decorator[0](decorator[1])(cls.__dict__[name]))
+                elif not decorator[1]:
+                    setattr(cls, name, decorator[0](decorator[2])(cls.__dict__[name]))
+                else:
+                    setattr(cls, name, decorator[0](cls.__dict__[name]))
     

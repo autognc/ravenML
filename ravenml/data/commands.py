@@ -99,10 +99,6 @@ def process_result(ctx: click.Context, result: CreateOutput, config: str):
         ci = ctx.obj
         dataset_name = ci.metadata['dataset_name']
         dataset_path = ci.dataset_path / dataset_name
-        temp_dir = ci.plugin_metadata['temp_dir_path']
-
-        # Deletes temp directory
-        cli_spinner("Deleting temp directory...", shutil.rmtree, temp_dir)
 
         # Uploads dataset to S3
         if (ci.upload):

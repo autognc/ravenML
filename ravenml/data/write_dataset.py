@@ -3,44 +3,9 @@ import pandas as pd
 from pathlib import Path
 from datetime import datetime
 from ravenml.data.interfaces import CreateInput
-from ravenml.utils.question import cli_spinner, cli_spinner_wrapper
+from ravenml.utils.question import cli_spinner, cli_spinner_wrapper, DecoratorSuperClass
 from ravenml.utils.config import get_config
-from ravenml.data.helpers import default_filter, copy_data_locally, split_data, read_json_metadata
-
-class DecoratorSuperClass:
-    """Superclass for DatasetWriter. Allows for decorators
-        from one class to be inherited to all subclasses. Subclasses can 
-        overload their decorators if desired.
-
-        Any decorator that is to be used on subclasses of this class must
-        set the attribute 'inherit_decorator' to the decorator function itself
-        in the inner function that it is passing. 
-
-        This class supports decorators with parameters, but requires that they
-        be set as attributes of the passed function as 'args' and 'kwargs'.
-    """
-    def __init_subclass__(cls):
-        decorator_registry = getattr(cls, "_decorator_registry", {}).copy()
-        cls._decorator_registry = decorator_registry
-        # annotate newly decorated methods in the current subclass:
-        for name, obj in cls.__dict__.items():
-            if getattr(obj, "inherit_decorator", False) and not name in decorator_registry:
-                decorator_registry[name] = (obj.inherit_decorator, getattr(obj, "args", False), getattr(obj, "kwargs", False))
-        # decorate methods annotated in the registry
-        # decorator[0] = decorator function
-        # decorator[1] = decorator args
-        # decorator[2] = decorator kwargs
-        for name, decorator in decorator_registry.items():
-            if name in cls.__dict__ and getattr(getattr(cls,name), "inherit_decorator", None) != decorator[0]:
-                if decorator[1] or decorator[2]:
-                    if decorator[2]:
-                        setattr(cls, name, decorator[0](decorator[1], decorator[2])(cls.__dict__[name]))
-                    else:
-                        setattr(cls, name, decorator[0](decorator[1])(cls.__dict__[name]))
-                elif not decorator[1]:
-                    setattr(cls, name, decorator[0](decorator[2])(cls.__dict__[name]))
-                else:
-                    setattr(cls, name, decorator[0](cls.__dict__[name]))
+from ravenml.data.helpers import default_filter, copy_associated_files, split_data, read_json_metadata
 
 class DatasetWriter(DecoratorSuperClass):
     """Interface for creating datasets, methods are in order of what is expected to be 
@@ -53,10 +18,9 @@ class DatasetWriter(DecoratorSuperClass):
             finding metadata files
         interactive_filter (): takes the current image_ids and allows the user to create
             sets through interactive filtering using the image_ids
-        load_data (): copies all related files to the image_ids into a temp folder
         construct_all (): plugin specific method to generate objects which will be used
             in writing the dataset
-        write_dataset (obj_list): main driver for writing the dataset locally
+        write_dataset (): main driver for writing the dataset locally
         write_metadata (): writes dataset metadata file(s)
         write_additional_files (): writes any plugin_specific files not covered in
             write_dataset, write_metadata
@@ -70,17 +34,10 @@ class DatasetWriter(DecoratorSuperClass):
         Args:
             create (CreateInput): what is passed to the plugin,
                 containing configuration information
-            kwargs : [WIP] whatever values are needed for initialization,
-                currently is just associated_files
         
         Initializations:
-            associated_files (dict): expected to follow the format:
-                { 'filetype' (String): ('prefix', 'suffix') (tuple) }
-                only the 'metadata' dict key is required (for getting image_ids)
             num_folds (int): number of folds in dataset
             test_percent (float): percentage of dataset to be used in test set
-            temp_dir (Path): path to directory holding all data to be used by the 
-                plugin
             dataset_path (Path): path to where dataset should be written
             dataset_name (String): name of dataset
             created_by (String): name of person creating dataset
@@ -95,14 +52,9 @@ class DatasetWriter(DecoratorSuperClass):
                 image_ids
         """
 
-        self.associated_files = kwargs['associated_files']
-        if not self.associated_files.get('metadata'):
-            raise Exception("Associated files must contain a 'metadata' key with a corresponding prefix-suffix pair")
-        
         metadata = create.metadata
         self.num_folds = create.kfolds
         self.test_percent = create.test_percent
-        self.temp_dir = create.plugin_metadata['temp_dir_path']
         self.dataset_path = create.dataset_path
         self.dataset_name = metadata['dataset_name']
         self.created_by = metadata['created_by']
@@ -112,6 +64,7 @@ class DatasetWriter(DecoratorSuperClass):
         self.tags_df = pd.DataFrame()
         self.image_ids = None
         self.filter_metadata = {"groups": []}
+        self.obj_list = []
     
     def load_image_ids(self):
         """Method goes through imagesets and is expected to populate the 'tags_df'
@@ -130,17 +83,8 @@ class DatasetWriter(DecoratorSuperClass):
         """
         raise NotImplementedError
 
-    @cli_spinner_wrapper("Copying data into temp folder...")
-    def load_data(self):
-        """Method goes through all image_ids and copies related data from imagesets
-            to temp directory.
-
-        Args:
-        """
-        raise NotImplementedError
-
     def construct_all(self):
-        """Method should create objects from the temp directory with whatever
+        """Method should create objects from the image_ids given with whatever
             information is needed for the write_dataset method to use
 
         Args:
@@ -150,7 +94,7 @@ class DatasetWriter(DecoratorSuperClass):
         raise NotImplementedError
 
     @cli_spinner_wrapper("Writing out dataset locally...")
-    def write_dataset(self, obj_list: list):
+    def write_dataset(self):
         """Main driver, writes dataset based on objects passed from construct_all
 
         Args:
@@ -182,19 +126,20 @@ class DefaultDatasetWriter(DatasetWriter):
         write_data (objects, path, split_type): method that is overloaded by the plugin, is called
             on by 'write_out_complete_set' in this implementation to write the contents of the objects
             created by 'construct_all'
-        write_out_complete_set (path (Path), data (object)): helper method for this implementation of
+        write_out_test_set (path (Path), data (list)): helper method for this implementation of
+            'write_dataset', writes out test set   
+        write_out_complete_set (path (Path), data (list)): helper method for this implementation of
             'write_dataset', creates test and train groups and corresponding paths for plugin to write to        
     """
 
-    def __init__(self, create: CreateInput, associated_files: dict):
+    def __init__(self, create: CreateInput):
         """Method calls DatasetWriter's initialization to get all variables it needs
 
         Args:
             create (CreateInput): what is passed to the plugin,
                 containing configuration information
-            associated_files (dict): file types associated with each image_id
         """
-        super().__init__(create, associated_files=associated_files)
+        super().__init__(create)
 
     def write_data(self, objects, path, split_type, *args, **kwargs):
         """Method should be overloaded by plugin if default 'write_dataset' implementation is to be called.
@@ -208,10 +153,10 @@ class DefaultDatasetWriter(DatasetWriter):
         """
         raise NotImplementedError
     
-    def load_image_ids(self):
+    def load_image_ids(self, metadata_format: tuple):
         """Method iterates through imagesets chosen by the user searching for image_ids based on the premise
             that each image_id corresponds to a metadata file. Once a metadata file is found (based on the
-            metadata prefix-suffix tuple provided in 'associated_files') image_id is extracted from the file
+            metadata prefix-suffix tuple provided) image_id is extracted from the file
             name and the file is parsed to get tag information. Currently only json metadata files are
             supported in this default implementation.
 
@@ -220,14 +165,15 @@ class DefaultDatasetWriter(DatasetWriter):
             (imageset_path (Path), image_id (String)) as keys and an array of True/False values for whether 
             the image_id has each corresponding tag. 'self.image_ids' is also expected to be set to a list of 
             image_ids if any other methods need to be used.
-
+        
+        Args:
+            metadata_format (tuple): prefix-suffix pair of what metadata files look like
         Variables Needed:
-            associated_files (dict): needed to find metadata files (provided by plugin)
             imageset_paths (list): filepaths to all imagesets being looked at (provided by 'create' input)
         """
         # Gets metadata prefix and suffix
-        metadata_prefix = self.associated_files['metadata'][0]
-        metadata_suffix = self.associated_files['metadata'][1]
+        metadata_prefix = metadata_format[0]
+        metadata_suffix = metadata_format[1]
         if metadata_suffix != '.json':
             raise Exception("Currently non-json metadata files are not supported for the default loading of image ids")
         
@@ -235,7 +181,7 @@ class DefaultDatasetWriter(DatasetWriter):
         # metadata files are parsed for tags and filename is parsed for image_id 
         for data_dir in self.imageset_paths:
             for dir_entry in os.scandir(data_dir):
-                if not dir_entry.name.startswith(metadata_prefix):
+                if not (dir_entry.name.startswith(metadata_prefix) and dir_entry.name.endswith(metadata_suffix)):
                     continue
                 image_id = dir_entry.name.replace(metadata_prefix, '').replace(metadata_suffix, '')
                 temp = read_json_metadata(dir_entry, image_id)
@@ -258,20 +204,6 @@ class DefaultDatasetWriter(DatasetWriter):
                 (provided by 'load_image_ids')
         """
         self.image_ids = default_filter(self.tags_df, self.filter_metadata)
-
-    def load_data(self):
-        """Method is expected to be called after 'load_image_ids' and 'interactive_filter' if filtering is
-            desired. Method goes through each image_id and copies its corresponing files into a temp directory
-            which will be later used by the plugin to create their dataset.
-
-            If overloaded, method is expected to copy all files the plugin needs into the provided 'temp_dir'.
-
-        Variables Needed:
-            image_ids (list): needed to find what needs to be copied (provided by 'load_image_ids'/'interactive_filter')
-            temp_dir (Path): needed to know where to copy to (provided by 'create' input)
-            associated_files (dict): needed to know what files need to be copied (provided by plugin)
-        """
-        copy_data_locally(self.image_ids, self.temp_dir, self.associated_files)
     
     def write_metadata(self):
         """Method writes out metadata in JSON format in file 'metadata.json',
@@ -304,35 +236,32 @@ class DefaultDatasetWriter(DatasetWriter):
         with open(metadata_filepath, 'w') as outfile:
             json.dump(metadata, outfile) 
 
-    def write_dataset(self, obj_list: list):
+    def write_dataset(self, associated_files):
         """Method is parent function for writing out complete dataset. Method first
             creates 'test' and 'dev' subsets. The 'test' subset gets all related files
             to it copied into a test folder. The 'dev' subset calls 'write_out_complete_set'
-            in the 'splits/complete' directory.
+            in the 'splits/complete' directory. Note that prior to this method, obj_list
+            should be set to a list of objects that are meant to be written.
 
             If overloaded, there are no expectations, but note that the variables 'kfolds'
             and 'test_percent' are provided for use.
-
+        
         Args:
-            obj_list (list): list of objects to be written in dataset
+            associated_files (list): decides what files are to be copied for the test set
 
         Variables Needed:
+            obj_list (list): list of objects to be written in dataset
             dataset_path (Path): where dataset will be written (provided by 'create' input)
             dataset_name (str): the name of the dataset (provided by 'create' input)
-            temp_dir (Path): where the raw data files are (provided by 'create' input)
-            associated_files (dict): decides what files are to be copied for the test set
-                (provided by 'create' input)
         """
         dataset_path = self.dataset_path / self.dataset_name
         print(dataset_path)
 
-        test_subset, dev_subset = split_data(obj_list, test_percent=self.test_percent)
+        test_subset, dev_subset = split_data(self.obj_list, test_percent=self.test_percent)
 
         # Test subset
         test_path = dataset_path / 'test'
-        os.mkdir(test_path)
-        test_image_ids = [(self.temp_dir, obj['image_id']) for obj in test_subset]
-        copy_data_locally(test_image_ids, test_path, self.associated_files)
+        self.write_out_test_set(test_path, test_subset, associated_files)
 
         dev_path = dataset_path / 'splits'
 
@@ -341,6 +270,23 @@ class DefaultDatasetWriter(DatasetWriter):
 
         complete_path = dev_path / 'complete'
         self.write_out_complete_set(complete_path, dev_subset)
+
+    def write_out_test_set(self, path, data, associated_files):
+        """Method is helper function for writing out dataset. Writes
+            out test set by copying over associated files to the
+            specified test path. Assumes objlist has 'image_filepath'
+            and 'image_id' as keys.
+
+            If overloaded, there are no expectations.
+
+        Args:
+            path (Path): Path to where data should be written
+            data (list): data that should be written
+            associated_files (list): decides what files are to be copied for the test set
+        """
+        os.mkdir(path)
+        test_image_ids = [(Path(os.path.dirname(obj['image_filepath'])), obj['image_id']) for obj in data]
+        copy_associated_files(test_image_ids, path, associated_files)
 
     def write_out_complete_set(self, path, data):
         """Method is helper function for writing out dataset. Creates a 

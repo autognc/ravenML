@@ -206,7 +206,7 @@ def join_sets(sets):
         subset='index', keep='first').set_index('index')
     return result
 
-def copy_data_locally(images: list, destination_dir: Path, associated_files: dict, num_threads=20):
+def copy_associated_files(images: list, destination_dir: Path, associated_files: dict, num_threads=20):
     """Copies files associated with provided image list into a destination 
         directory locally
     
@@ -214,10 +214,10 @@ def copy_data_locally(images: list, destination_dir: Path, associated_files: dic
         images (list): list of tuples with paths to a local directory paired 
             with an image id located in that directory
         destination_dir (Path): directory where data will be copied to
-        associated_files (dict): expected to follow the format:
-            { 'filetype' (String): ('prefix', 'suffix') (tuple) }
-            any number of dict entries are allowed, and lists of 
-            tuples for the values are also allowed.
+        associated_files (list): expected to be tuples of prefix-suffix pairs
+            (prefix (str), suffix (str)),
+            any number of list entries is allowed, but all associated files must
+            be present, including metadata files
         num_threads (int, optional): Defaults to 20. Number of threads
             performing concurrent copies.
     """
@@ -242,14 +242,8 @@ def copy_data_locally(images: list, destination_dir: Path, associated_files: dic
         workers.append(worker)
 
     # gets all associated prefix-suffix pairs from 
-    # associated_files dict 
-    file_types = []
-    for file_type in associated_files.values():
-        if type(file_type) is tuple:
-            file_types.append(file_type)
-        elif type(file_type) is list:
-            file_types += file_type
-    file_types = set(file_types)
+    # associated_files list 
+    file_types = set(associated_files)
 
     # iterates through each image path, and copies each associated file
     for image in images:
