@@ -42,14 +42,17 @@ def download_prefix(bucket_name: str, prefix: str, cache: RMLCache, custom_path:
     Returns:
         bool: T if successful, F if no objects found
     """
+    try:
+        s3_uri = 's3://' + bucket_name + '/' + prefix 
+        if custom_path:
+            local_path = cache.path / custom_path / prefix
+        else:
+            local_path = cache.path / prefix
 
-    s3_uri = 's3://' + bucket_name + '/' + prefix 
-    if custom_path:
-        local_path = cache.path / custom_path
-    else:
-        local_path = cache.path
-    
-    subprocess.call(["aws", "s3", "sync", s3_uri, local_path, '--quiet'])
+        subprocess.call(["aws", "s3", "sync", s3_uri, local_path, '--quiet'])
+        return True
+    except:
+        return False
 
 ### UPLOAD FUNCTIONS ###
 def upload_file_to_s3(prefix: str, file_path: Path, alternate_name=None):

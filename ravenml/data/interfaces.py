@@ -162,7 +162,7 @@ class CreateInput(object):
         image_bucket_name = bucketConfig.get('image_bucket_name')
         # Downloads each imageset and appends local path to 'self.imageset_paths'
         for imageset in imageset_list:
-            imageset_path = 'imagesets/' + imageset
+            imageset_path = 'imagesets/'
             self.imageset_cache.ensure_subpath_exists(imageset_path)
             download_prefix(image_bucket_name, imageset, self.imageset_cache, imageset_path)
             self.imageset_paths.append(self.imageset_cache.path / 'imagesets' / imageset)
