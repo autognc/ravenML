@@ -7,11 +7,21 @@ Command group for dataset exploration in ravenml.
 
 import click
 import pydoc
+import yaml
+import shutil
+from pkg_resources import iter_entry_points
+from click_plugins import with_plugins
 from colorama import Fore
+from pathlib import Path
 from ravenml.utils.imageset import get_imageset_names, get_imageset_metadata
 from ravenml.utils.dataset import get_dataset_names, get_dataset_metadata
 from ravenml.utils.plugins import LazyPluginGroup
-from ravenml.utils.question import cli_spinner
+from ravenml.utils.question import cli_spinner, user_confirms
+from ravenml.data.interfaces import CreateInput
+from ravenml.data.options import pass_create
+from ravenml.data.interfaces import CreateInput, CreateOutput
+from ravenml.utils.config import get_config
+from ravenml.utils.aws import upload_directory
 
 # metedata fields to exclude when printing metadata to the user 
 # these are specific to datasets at the moment
@@ -34,6 +44,10 @@ filter_details_opt = click.option(
             'Case sensitive and case insensitive filtering is performed.')
 )
 
+config_opt = click.option(
+    '-c', '--config', type=str, help='Path to config file. Defaults to ~/ravenML_configs/config.yaml'
+)
+
 
 ### COMMANDS ###
 @click.group(help='Data exploration and dataset creation commands.')
@@ -46,19 +60,57 @@ def data(ctx):
     """
     pass
 
-# TODO: eventually this will handle uploading/deleting the created
-# dataset given by a plugin when create is called, see train.commands.process_result for example
-@data.resultcallback()
-@click.pass_context
-def process_result(ctx: click.Context, result):
-    pass
-
-
 ## Dataset Creation Commands ##
-# TODO: determine interfaces for this command
 @data.group(cls=LazyPluginGroup, entry_point_name='ravenml.plugins.data', help='Create a new dataset.')
-def create():
-    click.echo("Eventually this will create datasets for you.")
+@click.pass_context
+@config_opt
+def create(ctx: click.Context, config: str):
+    """Creates CreateInput from config and sends to plugin
+    
+    Args:
+        ctx (Context): click context object
+        config (str): user config
+    """
+    if config:
+    # load config
+        try:
+            with open(Path(config), 'r') as stream:
+                config = yaml.safe_load(stream)
+        except Exception as e:
+            hint = 'config, no such file exists'
+            raise click.exceptions.BadParameter(config, ctx=ctx, param=config, param_hint=hint)
+        ctx.obj = CreateInput(config, ctx.invoked_subcommand)
+
+# dataset given by a plugin when create is called, see train.commands.process_result for example
+@create.resultcallback()
+@click.pass_context
+def process_result(ctx: click.Context, result: CreateOutput, config: str):
+    """Processes output of dataset creation
+    
+    Args:
+        ctx (Context): click context object
+        result (CreateOutput): result of dataset creation plugin
+        config (str): original config provided by user
+    Returns:
+        result (CreateOutput): result of dataset creation plugin
+    """
+    if result is not None:
+        # Gets dataset information from CreateInput
+        ci = ctx.obj
+        dataset_name = ci.metadata['dataset_name']
+        dataset_path = ci.dataset_path / dataset_name
+
+        # Uploads dataset to S3
+        if (ci.upload):
+            bucketConfig = get_config()
+            bucket = bucketConfig["dataset_bucket_name"]
+            cli_spinner("Uploading dataset to S3...", upload_directory, bucket_name=bucket, prefix=dataset_name, local_path=dataset_path)
+        
+        # Deletes local dataset
+        if (ci.delete_local):
+            cli_spinner("Deleting " + dataset_name + " dataset...", shutil.rmtree, dataset_path)
+            
+    return result
 
 
 ## Imageset Commands ##

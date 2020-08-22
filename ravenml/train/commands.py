@@ -76,7 +76,7 @@ def process_result(ctx: click.Context, result: TrainOutput, config: str):
         ti = ctx.obj    
         # upload if not in local mode, determined by user defined artifact_path field in config
         if not ti.config.get('artifact_path'):
-            uuid = cli_spinner('Uploading artifacts...', _upload_result, result, ti.metadata)
+            uuid = cli_spinner('Uploading artifacts...', _upload_result, result, ti.plugin_metadata)
             click.echo(f'Artifact UUID: {uuid}')
         else:
             with open(ti.artifact_path / 'metadata.json', 'w') as f:

@@ -1,6 +1,7 @@
 import os
 import boto3
 import json
+import subprocess
 from pathlib import Path
 from ravenml.utils.config import get_config
 from ravenml.utils.local_cache import RMLCache
@@ -28,33 +29,30 @@ def list_top_level_bucket_prefixes(bucket_name: str):
             contents.append(obj.get('Prefix')[:-1])
     return contents
     
-def download_prefix(bucket_name: str, prefix: str, cache: RMLCache):
+def download_prefix(bucket_name: str, prefix: str, cache: RMLCache, custom_path: str = None):
     """Downloads all files with the specified prefix into the provided local cache.
 
     Args:
         bucket_name (str): name of bucket
         prefix (str): prefix to filter on
         cache (RMLCache): cache to download files to
+        custom_path (str, optional): custom subpath in cache
+            to download files to
     
     Returns:
         bool: T if successful, F if no objects found
     """
-    S3 = boto3.resource('s3')
-    bucket = S3.Bucket(bucket_name)
-    # filter bucket contents by prefix (add / to avoid accidental matching of invalid substrings
-    # of valid dataset names)
-    i = 0
-    for obj in bucket.objects.filter(Prefix = prefix + '/'):
-        # check to be sure object is not a folder by peeking at its last character
-        i+=1
-        if obj.key[-1] != '/':
-            if not cache.subpath_exists(obj.key):
-                subpath = os.path.dirname(obj.key)
-                cache.ensure_subpath_exists(subpath)
-                storage_path = cache.path / Path(obj.key)
-                bucket.download_file(obj.key, str(storage_path))
-    # T if objects were found and downloaded, F if not
-    return i != 0
+    try:
+        s3_uri = 's3://' + bucket_name + '/' + prefix 
+        if custom_path:
+            local_path = cache.path / custom_path / prefix
+        else:
+            local_path = cache.path / prefix
+
+        subprocess.call(["aws", "s3", "sync", s3_uri, local_path, '--quiet'])
+        return True
+    except:
+        return False
 
 ### UPLOAD FUNCTIONS ###
 def upload_file_to_s3(prefix: str, file_path: Path, alternate_name=None):
@@ -83,4 +81,15 @@ def upload_dict_to_s3_as_json(s3_path: str, obj: dict):
     config = get_config()
     model_bucket = S3.Bucket(config['model_bucket_name'])   
     model_bucket.put_object(Body=json.dumps(obj, indent=2), Key=s3_path+'.json')
+
+def upload_directory(bucket_name, prefix, local_path):
+    """Recursively uploads a directory to S3
     
+    Args:
+        bucket_name (str): the name of the S3 bucket to upload to
+        prefix (str): the name of the prefix to be uploaded to
+        local_path (str): local path to directory being uploaded
+    """
+    
+    s3_uri = 's3://' + bucket_name + '/' + prefix 
+    subprocess.call(["aws", "s3", "sync", local_path, s3_uri, '--quiet'])
