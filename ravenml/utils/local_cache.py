@@ -9,8 +9,10 @@ import os
 import shutil
 from pathlib import Path
 
+
 # local cache root path for ravenml application
-RAVENML_LOCAL_STORAGE_PATH = Path(os.path.expanduser('~/.ravenML'))
+RAVENML_LOCAL_STORAGE_PATH = Path(os.environ.get("RAVENML_STORAGE_PATH", os.path.expanduser('~/.ravenML')))
+
 
 class RMLCache(object):
     """Represents a local storage cache. Provides functions for
@@ -22,11 +24,8 @@ class RMLCache(object):
     Attributes:
         path (Path): Absolute path in filesystem to root of the local cache.
     """
-
-    # local cache root path for ravenml application
-    RAVENML_LOCAL_STORAGE_PATH = Path(os.path.expanduser('~/.ravenML'))
     
-    def __init__(self, path:str='.'):
+    def __init__(self, path: str='.'):
         self.path = RAVENML_LOCAL_STORAGE_PATH / Path(path)
         # self.ensure_exists()
 
