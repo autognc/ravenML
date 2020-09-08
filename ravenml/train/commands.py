@@ -76,7 +76,7 @@ def process_result(ctx: click.Context, result: TrainOutput, config: str):
         ti = ctx.obj    
         # upload if not in local mode, determined by user defined artifact_path field in config
         if not ti.config.get('artifact_path'):
-            uuid = cli_spinner('Uploading artifacts...', _upload_result, result, ti.plugin_metadata)
+            uuid = cli_spinner('Uploading artifacts...', _upload_result, result, ti.metadata, ti.plugin_metadata)
             click.echo(f'Artifact UUID: {uuid}')
         else:
             with open(ti.artifact_path / 'metadata.json', 'w') as f:
@@ -110,7 +110,7 @@ def process_result(ctx: click.Context, result: TrainOutput, config: str):
 
 
 ### HELPERS ###
-def _upload_result(result: TrainOutput, metadata: dict):
+def _upload_result(result: TrainOutput, metadata: dict, plugin_metadata: dict):
     """ Wraps upload procedure into single function for use with cli_spinner.
 
     Generates a UUID for the model and uploads all artifacts.
@@ -118,13 +118,15 @@ def _upload_result(result: TrainOutput, metadata: dict):
     Args:
         result (TrainOutput): TrainOutput object, to be uploaded
         metadata (dict): metadata associated with this run, to be uploaded
+        plugin_metadata (dict): plugin metadata, used to access architecture of run
+            for naming uploading model
     
     Returns:
         str: uuid assigned to result on upload
     """
     shortuuid.set_alphabet('23456789abcdefghijkmnopqrstuvwxyz')
     uuid = shortuuid.uuid()
-    model_name = f'{metadata["architecture"]}_{uuid}.pb'
+    model_name = f'{plugin_metadata["architecture"]}_{uuid}.pb'
     upload_file_to_s3('models', result.model_path, alternate_name=model_name)
     upload_dict_to_s3_as_json(f'models/metadata_{uuid}', metadata)
     if result.extra_files != []:
