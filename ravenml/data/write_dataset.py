@@ -86,10 +86,11 @@ class DatasetWriter(DecoratorSuperClass):
 
     def set_size_filter(self, set_sizes: dict=None):
         """Method assumes that 'image_ids' has already been found and allows
-            user to filter through them for subsets they choose to use based on tags
+            user to filter through them based on how many images in each imageset
+            they want.
 
         Args:
-            set_sizes (dict): contains the amoung of images from each imageset in the following format,
+            set_sizes (dict): contains the amount of images from each imageset in the following format,
                 { imageset_name (str) : num_images (int) }
         """
         raise NotImplementedError
@@ -230,12 +231,12 @@ class DefaultDatasetWriter(DatasetWriter):
         # Goes through specified filtering amounts for each imageset and prompts for missing values
         filtered_image_ids = []
         for imageset in imageset_names:
-            subsetSize = set_sizes[imageset] if set_sizes.get(imageset) else int(user_input(
+            subset_size = set_sizes[imageset] if set_sizes.get(imageset) else int(user_input(
                 message=f'How many images from {imageset} would you like to use?'))
-            if subsetSize < 0 or subsetSize > len(imageset_to_image_ids_dict[imageset]):
-                raise Exception(f'Invalid number ({subsetSize}) of images to use from {imageset}')
-            filtered_image_ids += sample(imageset_to_image_ids_dict[imageset],subsetSize)
-            self.filter_metadata[imageset] = subsetSize
+            if subset_size < 0 or subset_size > len(imageset_to_image_ids_dict[imageset]):
+                raise Exception(f'Invalid number ({subset_size}) of images to use from {imageset}')
+            filtered_image_ids += sample(imageset_to_image_ids_dict[imageset],subset_size)
+            self.filter_metadata[imageset] = subset_size
 
         # Updates image_ids with the new information
         self.image_ids = filtered_image_ids
