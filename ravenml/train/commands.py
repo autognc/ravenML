@@ -10,6 +10,7 @@ import json
 import shortuuid
 import boto3
 import yaml
+import os
 from urllib.request import urlopen
 from urllib.error import URLError
 from pathlib import Path
@@ -126,7 +127,8 @@ def _upload_result(result: TrainOutput, metadata: dict, plugin_metadata: dict):
     """
     shortuuid.set_alphabet('23456789abcdefghijkmnopqrstuvwxyz')
     uuid = shortuuid.uuid()
-    model_name = f'{plugin_metadata["architecture"]}_{uuid}.pb'
+    file_extension = os.path.splitext(result.model_path)[1]
+    model_name = f'{plugin_metadata["architecture"]}_{uuid}{file_extension}'
     upload_file_to_s3('models', result.model_path, alternate_name=model_name)
     upload_dict_to_s3_as_json(f'models/metadata_{uuid}', metadata)
     if result.extra_files != []:
