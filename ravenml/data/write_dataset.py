@@ -1,4 +1,4 @@
-import os, shutil, time, json
+import os, inspect, shutil, time, json, subprocess
 import pandas as pd
 from pathlib import Path
 from datetime import datetime
@@ -234,6 +234,13 @@ class DefaultDatasetWriter(DatasetWriter):
         metadata["training_type"] = self.plugin_name
         metadata["image_ids"] = [(image_id[0].name, image_id[1]) for image_id in self.image_ids]
         metadata["filters"] = self.filter_metadata
+        metadata["ravenml_git_sha"] = subprocess.check_output(["git", "rev-parse", "HEAD"]).strip().decode('utf-8')
+
+        # Finds file which called 'write_metadata' method, which should be the plugin and changes to that directory
+        plugin_file = inspect.getmodule(inspect.stack()[3][0]).__file__
+        os.chdir(os.path.dirname(plugin_file))
+        metadata["plugin_git_sha"] = subprocess.check_output(["git", "rev-parse", "HEAD"]).strip().decode('utf-8')
+
         with open(metadata_filepath, 'w') as outfile:
             json.dump(metadata, outfile) 
 
