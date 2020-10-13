@@ -225,6 +225,8 @@ class DefaultDatasetWriter(DatasetWriter):
         """
         dataset_path = self.dataset_path / self.dataset_name
         metadata_filepath = dataset_path / 'metadata.json'
+        ravenml_patch_filepath = dataset_path / 'ravenml.diff'
+        plugin_patch_filepath = dataset_path / 'plugin.diff'
 
         metadata = {}
         metadata["name"] = self.dataset_name
@@ -236,13 +238,22 @@ class DefaultDatasetWriter(DatasetWriter):
         metadata["filters"] = self.filter_metadata
         metadata["ravenml_git_sha"] = subprocess.check_output(["git", "rev-parse", "HEAD"]).strip().decode('utf-8')
 
+        # Writes patchfile for raven core
+        with open(ravenml_patch_filepath, 'w') as f:
+            subprocess.call(["git", "diff", "--no-prefix", "-u", "."], stdout=f)
+
         # Finds file which called 'write_metadata' method, which should be the plugin and changes to that directory
         plugin_file = inspect.getmodule(inspect.stack()[3][0]).__file__
         os.chdir(os.path.dirname(plugin_file))
         metadata["plugin_git_sha"] = subprocess.check_output(["git", "rev-parse", "HEAD"]).strip().decode('utf-8')
 
+        # Writes patchfile for plugin code
+        # Only writes patchfile for diff in plugin folder
+        with open(plugin_patch_filepath, 'w') as f:
+            subprocess.call(["git", "diff", "--no-prefix", "-u", ".."], stdout=f)
+
         with open(metadata_filepath, 'w') as outfile:
-            json.dump(metadata, outfile) 
+            json.dump(metadata, outfile)
 
     def write_dataset(self, associated_files):
         """Method is parent function for writing out complete dataset. Method first
