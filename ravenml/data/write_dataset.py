@@ -1,9 +1,10 @@
 import os, shutil, time, json
 import pandas as pd
+from random import sample
 from pathlib import Path
 from datetime import datetime
 from ravenml.data.interfaces import CreateInput
-from ravenml.utils.question import cli_spinner, cli_spinner_wrapper, DecoratorSuperClass
+from ravenml.utils.question import cli_spinner, cli_spinner_wrapper, DecoratorSuperClass, user_input
 from ravenml.utils.config import get_config
 from ravenml.data.helpers import default_filter, copy_associated_files, split_data, read_json_metadata
 
@@ -16,8 +17,10 @@ class DatasetWriter(DecoratorSuperClass):
             to be used by the rest of the methods and the plugins
         load_image_ids (): gets all image_ids/tags from the supplied imagesets based on
             finding metadata files
-        interactive_filter (): takes the current image_ids and allows the user to create
-            sets through interactive filtering using the image_ids
+        set_size_filter (set_sizes (dict)): takes the current image_ids and allows the
+            user to filter by amount of images per imageset being used
+        interactive_tag_filter (): takes the current image_ids and allows the user to create
+            sets through interactive filtering using the image_id tags
         construct_all (): plugin specific method to generate objects which will be used
             in writing the dataset
         write_dataset (): main driver for writing the dataset locally
@@ -50,6 +53,10 @@ class DatasetWriter(DecoratorSuperClass):
                 and an image_id in that imageset
             filter_metadata (dict): holds the groups of different subsets of
                 image_ids
+            obj_dict (dict): holds image_id-constructed object pairs which will
+                be used to write the dataset
+            metadata_foramt (tuple): holds a prefix-suffix pair for the format
+                of metadata files
         """
 
         metadata = create.metadata
@@ -62,10 +69,12 @@ class DatasetWriter(DecoratorSuperClass):
         self.plugin_name = create.plugin_metadata['architecture']
         self.imageset_paths = create.imageset_paths
         self.tags_df = pd.DataFrame()
-        self.image_ids = None
+        self.image_ids = []
         self.filter_metadata = {"groups": []}
         self.obj_dict = {}
+        self.metadata_format = None
     
+    @cli_spinner_wrapper("Loading Image Ids...")
     def load_image_ids(self):
         """Method goes through imagesets and is expected to populate the 'tags_df'
             dataframe with image_ids and tags related to each image_id, as well
@@ -75,14 +84,26 @@ class DatasetWriter(DecoratorSuperClass):
         """
         raise NotImplementedError
 
-    def interactive_filter(self):
-        """Method assumes that 'image_ids' and 'tags_df' have already been found and allows
+    def set_size_filter(self, set_sizes: dict=None):
+        """Method assumes that 'image_ids' has already been found and allows
+            user to filter through them based on how many images in each imageset
+            they want.
+
+        Args:
+            set_sizes (dict): contains the amount of images from each imageset in the following format,
+                { imageset_name (str) : num_images (int) }
+        """
+        raise NotImplementedError
+
+    def interactive_tag_filter(self):
+        """Method assumes that 'image_ids' has already been found and allows
             user to filter through them for subsets they choose to use based on tags
 
         Args:
         """
         raise NotImplementedError
 
+    @cli_spinner_wrapper("Constructing data...")
     def construct_all(self):
         """Method should create objects from the image_ids given with whatever
             information is needed for the write_dataset method to use. Is required 
@@ -161,11 +182,8 @@ class DefaultDatasetWriter(DatasetWriter):
             name and the file is parsed to get tag information. Currently only json metadata files are
             supported in this default implementation.
 
-            If overridden, method is expected to set 'self.tags_df' if wanting to support 'interactive_filter'.
-            'self.tags_df' should be set to a pandas dataframe created from a dict with tuple pairs: 
-            (imageset_path (Path), image_id (String)) as keys and an array of True/False values for whether 
-            the image_id has each corresponding tag. 'self.image_ids' is also expected to be set to a list of 
-            image_ids if any other methods need to be used.
+            If overridden 'self.image_ids' is expected to be set to a list of 
+            image_ids if any other methods need to be used (including filtering).
         
         Args:
             metadata_format (tuple): prefix-suffix pair of what metadata files look like
@@ -173,6 +191,7 @@ class DefaultDatasetWriter(DatasetWriter):
             imageset_paths (list): filepaths to all imagesets being looked at (provided by 'create' input)
         """
         # Gets metadata prefix and suffix
+        self.metadata_format = metadata_format
         metadata_prefix = metadata_format[0]
         metadata_suffix = metadata_format[1]
         if metadata_suffix != '.json':
@@ -185,15 +204,46 @@ class DefaultDatasetWriter(DatasetWriter):
                 if not (dir_entry.name.startswith(metadata_prefix) and dir_entry.name.endswith(metadata_suffix)):
                     continue
                 image_id = dir_entry.name.replace(metadata_prefix, '').replace(metadata_suffix, '')
-                temp = read_json_metadata(dir_entry, image_id)
-                self.tags_df = pd.concat((self.tags_df, temp), sort=False)
-            self.tags_df = self.tags_df.fillna(False)
+                self.image_ids.append((data_dir, image_id))
 
-        self.image_ids = self.tags_df.index.tolist()
-
-    def interactive_filter(self):
+    def set_size_filter(self, set_sizes: dict=None):
         """Method is expected to only be called after 'load_image_ids' is called, as it relies on 
-            'self.tags_df' to be prepopulated. Method prompts user through interactive filtering 
+            'self.image_ids' to be prepopulated. Method filters by choosing specified amount of images
+            from each imageset.
+
+            If overridden, method is expected to set 'self.image_ids' to whatever image_ids are still
+            to be used after filtering. 'self.filter_metadata' also needs to be set to a dict containing
+            imageset names as keys and lists of image_ids as values.
+
+        Args:
+            set_sizes (dict): contains the amoung of images from each imageset in the following format,
+                { imageset_name (str) : num_images (int) }
+        Variables Needed:
+            image_ids (list): needed for filtering
+        """
+        # Gets dict of image_ids associated with each imageset
+        imageset_names = [os.path.basename(path) for path in self.imageset_paths ]
+        imageset_to_image_ids_dict = { name: [] for name in imageset_names}
+        for image_id in self.image_ids:
+            if os.path.basename(image_id[0]) in imageset_names:
+                imageset_to_image_ids_dict[os.path.basename(image_id[0])].append(image_id)
+             
+        # Goes through specified filtering amounts for each imageset and prompts for missing values
+        filtered_image_ids = []
+        for imageset in imageset_names:
+            subset_size = set_sizes[imageset] if set_sizes.get(imageset) else int(user_input(
+                message=f'How many images from {imageset} would you like to use?'))
+            if subset_size < 0 or subset_size > len(imageset_to_image_ids_dict[imageset]):
+                raise Exception(f'Invalid number ({subset_size}) of images to use from {imageset}')
+            filtered_image_ids += sample(imageset_to_image_ids_dict[imageset],subset_size)
+            self.filter_metadata[imageset] = subset_size
+
+        # Updates image_ids with the new information
+        self.image_ids = filtered_image_ids
+
+    def interactive_tag_filter(self):
+        """Method is expected to only be called after 'load_image_ids' is called, as it relies on 
+            'self.image_ids' to be prepopulated. Method prompts user through interactive filtering 
             of image_ids based on their tags.
 
             If overridden, method is expected to set 'self.image_ids' to whatever image_ids are still
@@ -201,10 +251,35 @@ class DefaultDatasetWriter(DatasetWriter):
             set-names as keys and lists of image_ids as values.
 
         Variables Needed:
-            tags_df (dataframe): needs to be set for the 'default_filter' function to be able to filter by tags
-                (provided by 'load_image_ids')
+            image_ids (list): needed for filtering
+            metadata_format (tuple): needed to read the metadata files and get the associated tags for each image_id
         """
+        # Gets dict of image_ids associated with each imageset
+        imageset_names = [os.path.basename(path) for path in self.imageset_paths ]
+        imageset_to_image_ids_dict = { name: [] for name in imageset_names}
+        for image_id in self.image_ids:
+            if os.path.basename(image_id[0]) in imageset_names:
+                imageset_to_image_ids_dict[os.path.basename(image_id[0])].append(image_id)
+
+        for image_id in self.image_ids:
+            temp = read_json_metadata(image_id[0] / f'{image_id[1]}{self.metadata_format[1]}', image_id[1])
+            self.tags_df = pd.concat((self.tags_df, temp), sort=False)
+        self.tags_df = self.tags_df.fillna(False)
         self.image_ids = default_filter(self.tags_df, self.filter_metadata)
+
+    def load_data(self):
+        """Method is expected to be called after 'load_image_ids' and filtering methods if filtering is
+            desired. Method goes through each image_id and copies its corresponing files into a temp directory
+            which will be later used by the plugin to create their dataset.
+
+            If overloaded, method is expected to copy all files the plugin needs into the provided 'temp_dir'.
+
+        Variables Needed:
+            image_ids (list): needed to find what needs to be copied (provided by 'load_image_ids'/filtering)
+            temp_dir (Path): needed to know where to copy to (provided by 'create' input)
+            associated_files (dict): needed to know what files need to be copied (provided by plugin)
+        """
+        copy_associated_files(self.image_ids, self.temp_dir, self.associated_files)
     
     def write_metadata(self):
         """Method writes out metadata in JSON format in file 'metadata.json',
@@ -220,7 +295,7 @@ class DefaultDatasetWriter(DatasetWriter):
             training_type (str): the training type selected by the user (provided by 'create' input)
             image_ids (list): a list of image IDs that ended up in the final
                 dataset (either dev or test) (provided by 'create' input)
-            filters (dict): a dictionary representing filter metadata (provided by 'interactive_filter')
+            filters (dict): a dictionary representing filter metadata (provided by filtering methods)
             dataset_path (Path): where metadata will be written (provided by 'create' input)
         """
         dataset_path = self.dataset_path / self.dataset_name
