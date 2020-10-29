@@ -225,8 +225,6 @@ class DefaultDatasetWriter(DatasetWriter):
         """
         dataset_path = self.dataset_path / self.dataset_name
         metadata_filepath = dataset_path / 'metadata.json'
-        ravenml_patch_filepath = dataset_path / 'ravenml.diff'
-        plugin_patch_filepath = dataset_path / 'plugin.diff'
 
         metadata = {}
         metadata["name"] = self.dataset_name
