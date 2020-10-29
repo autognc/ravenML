@@ -237,20 +237,15 @@ class DefaultDatasetWriter(DatasetWriter):
         metadata["image_ids"] = [(image_id[0].name, image_id[1]) for image_id in self.image_ids]
         metadata["filters"] = self.filter_metadata
         metadata["ravenml_git_sha"] = subprocess.check_output(["git", "rev-parse", "HEAD"]).strip().decode('utf-8')
-
-        # Writes patchfile for raven core
-        with open(ravenml_patch_filepath, 'w') as f:
-            subprocess.call(["git", "diff", "--no-prefix", "-u", "."], stdout=f)
+        metadata["ravenml_git_patch"] = subprocess.check_output(["git", "diff", "--no-prefix", "-u", "."]).decode('utf-8')
 
         # Finds file which called 'write_metadata' method, which should be the plugin and changes to that directory
         plugin_file = inspect.getmodule(inspect.stack()[3][0]).__file__
         os.chdir(os.path.dirname(plugin_file))
         metadata["plugin_git_sha"] = subprocess.check_output(["git", "rev-parse", "HEAD"]).strip().decode('utf-8')
 
-        # Writes patchfile for plugin code
         # Only writes patchfile for diff in plugin folder
-        with open(plugin_patch_filepath, 'w') as f:
-            subprocess.call(["git", "diff", "--no-prefix", "-u", ".."], stdout=f)
+        metadata["plugin_git_patch"] = subprocess.check_output(["git", "diff", "--no-prefix", "-u", ".."]).decode('utf-8')
 
         with open(metadata_filepath, 'w') as outfile:
             json.dump(metadata, outfile)
