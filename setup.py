@@ -45,7 +45,7 @@ setup(
     ],
     entry_points={
         'console_scripts': ['ravenml=ravenml.cli:cli'],
-        # 'egg_info.writers': ['git_info.json = ravenml.utils.git:write_test']
+        'egg_info.writers': ['git_info.json = ravenml.utils.git:write_test']
     }
 )
 
