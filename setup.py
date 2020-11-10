@@ -1,21 +1,13 @@
-# #!/usr/bin/env python
-
-# from setuptools import setup
-
-# setup(
-#     setup_requires=['pbr>=1.9', 'setuptools>=17.1'],
-#     pbr=True,
-# )
-
 from setuptools import setup, find_packages
-from os import path
-
+from os import path, remove
 
 proj_dir = path.abspath(path.dirname(__file__))
 with open(path.join(proj_dir, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
     
 # attempt to write git data to file
+with open(path.join(proj_dir, 'ravenml', 'tester.txt'), 'w') as f:
+    f.write('test me')
 
 setup(
     name='ravenml',
@@ -29,7 +21,7 @@ setup(
     keywords= ['machine learning', 'data science'],
     download_url = 'https://github.com/autognc/ravenML/archive/v1.2.tar.gz',
     packages=find_packages(),
-    package_data={'ravenml': ['test.txt']},
+    package_data={'ravenml': ['tester.txt']},
     install_requires=[
         'Click>=7.0',
         'questionary>=1.0.2',
@@ -47,4 +39,7 @@ setup(
         'console_scripts': ['ravenml=ravenml.cli:cli'],
     }
 )
+
+# destroy git file
+remove(path.join(proj_dir, 'ravenml', 'tester.txt'))
       
