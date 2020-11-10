@@ -14,6 +14,8 @@ from os import path
 proj_dir = path.abspath(path.dirname(__file__))
 with open(path.join(proj_dir, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
+    
+# attempt to write git data to file
 
 setup(
     name='ravenml',
@@ -22,17 +24,18 @@ setup(
     long_description = long_description,
     long_description_content_type = 'text/markdown',
     license='MIT',
-    packages=find_packages(),
     author='Carson Schubert, Abhi Dhir, Pratyush Singh',
     author_email='carson.schubert14@gmail.com',
     keywords= ['machine learning', 'data science'],
     download_url = 'https://github.com/autognc/ravenML/archive/v1.2.tar.gz',
+    packages=find_packages(),
+    package_data={'ravenml': ['./setup.cfg']},
     install_requires=[
         'Click>=7.0',
         'questionary>=1.0.2',
         'boto3>=1.9.86', 
         'shortuuid>=0.5.0',
-        'halo>=0.0.26'
+        'halo>=0.0.26',
         'colorama>=0.3.9',
         'pyaml>=19.4.1',
     ],
@@ -42,9 +45,6 @@ setup(
     ],
     entry_points={
         'console_scripts': ['ravenml=ravenml.cli:cli'],
-        'egg_info.writers': [
-            'git_info.json = ravenml.utils.git:write_test'
-        ]
     }
 )
       
