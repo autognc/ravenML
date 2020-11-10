@@ -29,7 +29,7 @@ setup(
     keywords= ['machine learning', 'data science'],
     download_url = 'https://github.com/autognc/ravenML/archive/v1.2.tar.gz',
     packages=find_packages(),
-    package_data={'ravenml': ['./Dev_Intro.md']},
+    data_files={'git_data': ['./Dev_Intro.md']},
     install_requires=[
         'Click>=7.0',
         'questionary>=1.0.2',
