@@ -54,5 +54,5 @@ setup(
 
 # destroy git file
 if repo:
-    remove(path.join(rml_dir, 'ravenml', 'git_info.json'))
+    # remove(path.join(rml_dir, 'ravenml', 'git_info.json'))
       
