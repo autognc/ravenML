@@ -8,6 +8,7 @@ Utility functions for grabbing git information to place into metadata.
 import subprocess
 from os import chdir
 from pathlib import Path
+import json
 
 def git_sha(path: Path) -> str:
     # store cwd and change to path
@@ -56,3 +57,8 @@ def git_patch_untracked(path: Path) -> str:
     # restore cwd
     chdir(cwd)
     return untracked_patch.decode('utf-8') if len(err) == 0 else err.decode('utf-8')
+
+def write_test(cmd, basename, filename):
+    values = {}
+    values['test'] = 'test'
+    cmd.write_file('test', filename, json.dumps(values, sort_keys=True))
