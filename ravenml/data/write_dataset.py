@@ -5,7 +5,7 @@ from datetime import datetime
 from ravenml.data.interfaces import CreateInput
 from ravenml.utils.question import cli_spinner, cli_spinner_wrapper, DecoratorSuperClass
 from ravenml.utils.config import get_config
-from ravenml.utils.git import git_sha, git_patch_tracked, git_patch_untracked
+from ravenml.utils.git import git_sha, git_patch_tracked, git_patch_untracked, retrieve_from_dist_info
 from ravenml.data.helpers import default_filter, copy_associated_files, split_data, read_json_metadata
 
 class DatasetWriter(DecoratorSuperClass):
@@ -238,11 +238,14 @@ class DefaultDatasetWriter(DatasetWriter):
         
         # find ravenml directory (must go up three levels)
         rml_dir = Path(__file__).resolve().parent.parent.parent
-        
-        # ravenml core data 
-        metadata["ravenml_git_sha"] = git_sha(rml_dir)
-        metadata["ravenml_tracked_git_patch"] = git_patch_tracked(rml_dir)
-        metadata["ravenml_untracked_git_patch"] = git_patch_untracked(rml_dir)
+        # ravenml git core data 
+        if '.git' in os.listdir(rml_dir):
+            # indicates we are in a local install (actual git repo)
+            metadata["ravenml_git_sha"] = git_sha(rml_dir)
+            metadata["ravenml_tracked_git_patch"] = git_patch_tracked(rml_dir)
+            metadata["ravenml_untracked_git_patch"] = git_patch_untracked(rml_dir)
+        else:
+            retrieve_from_dist_info(rml_dir)
 
         # Finds file which called 'write_metadata' method, which should be the plugin and changes to that directory
         # NOTE: this assumes that the file calling `write_metadata` is located at `plugin_name/plugin_name` inside the plugin

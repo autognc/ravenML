@@ -6,9 +6,13 @@ Utility functions for grabbing git information to place into metadata.
 """
 
 import subprocess
-from os import chdir
-from pathlib import Path
 import json
+import re
+from os import chdir, listdir
+from pathlib import Path
+
+# look for dist-info or egg-info styles
+raven_dist_info_re = re.compile("(ravenml)-?\d*\.?\d*(.dist-info|.egg-info)")
 
 def git_sha(path: Path) -> str:
     # store cwd and change to path
@@ -58,7 +62,15 @@ def git_patch_untracked(path: Path) -> str:
     chdir(cwd)
     return untracked_patch.decode('utf-8') if len(err) == 0 else err.decode('utf-8')
 
+# path should be to package root
+def retrieve_from_dist_info(path: Path):
+    site_packages_dir = path.parent
+    matches = filter(raven_dist_info_re.match, os.listdir(site_packages_dir))
+    print(matches)
+
 def write_test(cmd, basename, filename):
     values = {}
-    values['test'] = 'test'
-    cmd.write_file('test', filename, json.dumps(values, sort_keys=True))
+    values['cmd'] = str(cmd)
+    values['basename'] = str(basename)
+    values['filename'] = str(filename)
+    cmd.write_file('git_info', filename, json.dumps(values, sort_keys=True))
