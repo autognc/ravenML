@@ -9,7 +9,7 @@ with open(path.join(rml_dir, 'README.md'), encoding='utf-8') as f:
     
 # attempt to write git data to file
 if is_repo(rml_dir):
-    with open(path.join(rml_dir, 'ravenml', 'git_data.json'), 'w') as f:
+    with open(path.join(rml_dir, 'ravenml', 'git_info.json'), 'w') as f:
         info = {
             'ravenml_git_sha': git_sha(rml_dir),
             'ravenml_tracked_git_patch': git_patch_tracked(rml_dir),
@@ -45,10 +45,10 @@ setup(
     ],
     entry_points={
         'console_scripts': ['ravenml=ravenml.cli:cli'],
-        'egg_info.writers': ['git_data.json = ravenml.utils.git:write_test']
+        # 'egg_info.writers': ['git_info.json = ravenml.utils.git:write_test']
     }
 )
 
 # destroy git file
-remove(path.join(rml_dir, 'ravenml', 'git_data.json'))
+remove(path.join(rml_dir, 'ravenml', 'git_info.json'))
       
