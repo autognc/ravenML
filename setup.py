@@ -9,7 +9,9 @@ with open(path.join(rml_dir, 'README.md'), encoding='utf-8') as f:
     
 # attempt to write git data to file
 repo = is_repo(rml_dir)
+print(repo)
 if repo:
+    print('doing a thing')
     with open(path.join(rml_dir, 'ravenml', 'git_info.json'), 'w') as f:
         info = {
             'ravenml_git_sha': git_sha(rml_dir),
