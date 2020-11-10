@@ -14,6 +14,9 @@ from pathlib import Path
 # look for dist-info or egg-info styles
 raven_dist_info_re = re.compile("(ravenml)-?\d*\.?\d*(.dist-info|.egg-info)")
 
+def is_repo(path: Path) -> bool:
+    return '.git' in listdir(path)
+
 def git_sha(path: Path) -> str:
     # store cwd and change to path
     cwd = Path.cwd()

@@ -1,13 +1,21 @@
 from setuptools import setup, find_packages
 from os import path, remove
+from ravenml.utils.git import is_repo, git_sha, git_patch_tracked, git_patch_untracked
+from json import dump
 
-proj_dir = path.abspath(path.dirname(__file__))
-with open(path.join(proj_dir, 'README.md'), encoding='utf-8') as f:
+rml_dir = path.abspath(path.dirname(__file__))
+with open(path.join(rml_dir, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
     
 # attempt to write git data to file
-with open(path.join(proj_dir, 'ravenml', 'tester.txt'), 'w') as f:
-    f.write('test me')
+if is_repo(rml_dir):
+    with open(path.join(rml_dir, 'ravenml', 'git_data.json'), 'w') as f:
+        info = {
+            'ravenml_git_sha': git_sha(rml_dir),
+            'ravenml_tracked_git_patch': git_patch_tracked(rml_dir),
+            'ravenml_untracked_git_patch': git_patch_untracked(rml_dir)
+        }
+        dump(info, f, indent=2)
 
 setup(
     name='ravenml',
@@ -21,7 +29,7 @@ setup(
     keywords= ['machine learning', 'data science'],
     download_url = 'https://github.com/autognc/ravenML/archive/v1.2.tar.gz',
     packages=find_packages(),
-    package_data={'ravenml': ['tester.txt']},
+    package_data={'ravenml': ['git_info.json']},
     install_requires=[
         'Click>=7.0',
         'questionary>=1.0.2',
@@ -41,5 +49,5 @@ setup(
 )
 
 # destroy git file
-remove(path.join(proj_dir, 'ravenml', 'tester.txt'))
+remove(path.join(rml_dir, 'ravenml', 'git_data.json'))
       
