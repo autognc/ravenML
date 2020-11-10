@@ -1,10 +1,11 @@
-import os, inspect, shutil, time, json, subprocess
+import os, inspect, shutil, time, json
 import pandas as pd
 from pathlib import Path
 from datetime import datetime
 from ravenml.data.interfaces import CreateInput
 from ravenml.utils.question import cli_spinner, cli_spinner_wrapper, DecoratorSuperClass
 from ravenml.utils.config import get_config
+from ravenml.utils.git import git_sha, git_patch_tracked, git_patch_untracked
 from ravenml.data.helpers import default_filter, copy_associated_files, split_data, read_json_metadata
 
 class DatasetWriter(DecoratorSuperClass):
@@ -235,26 +236,26 @@ class DefaultDatasetWriter(DatasetWriter):
         metadata["image_ids"] = [(image_id[0].name, image_id[1]) for image_id in self.image_ids]
         metadata["filters"] = self.filter_metadata
         
-        # store cwd for restore after this function
-        cwd = Path.cwd()
+        # find ravenml directory (must go up three levels)
+        rml_dir = Path(__file__).resolve().parent.parent.parent
         
-        # find ravenml directory and switch to it
-        rml_dir = Path(__file__).resolve().parent
-        os.chdir(rml_dir)
-        metadata["ravenml_git_sha"] = subprocess.check_output(["git", "rev-parse", "HEAD"]).strip().decode('utf-8')
-        metadata["ravenml_git_patch"] = subprocess.check_output(["git", "diff", "--no-prefix", "-u", "."]).decode('utf-8')
-        # must switch back for future calls to __file__  and parent() to work
-        os.chdir(cwd)
+        # ravenml core data 
+        metadata["ravenml_git_sha"] = git_sha(rml_dir)
+        metadata["ravenml_tracked_git_patch"] = git_patch_tracked(rml_dir)
+        metadata["ravenml_untracked_git_patch"] = git_patch_untracked(rml_dir)
 
         # Finds file which called 'write_metadata' method, which should be the plugin and changes to that directory
         # NOTE: this assumes that the file calling `write_metadata` is located at `plugin_name/plugin_name` inside the plugin
-        plugin_dir = Path(inspect.getmodule(inspect.stack()[3][0]).__file__).resolve().parent
-        os.chdir(plugin_dir)
-        metadata["plugin_git_sha"] = subprocess.check_output(["git", "rev-parse", "HEAD"]).strip().decode('utf-8')
-        # Only writes patchfile for diff in plugin folder
-        metadata["plugin_git_patch"] = subprocess.check_output(["git", "diff", "--no-prefix", "-u", ".."]).decode('utf-8')
-        os.chdir(cwd)
-
+        # index of the caller is 3 because there are two additional layers from cli_spinner
+        # decorator and actual cli_spinner function
+        plugin_dir = Path(inspect.getmodule(inspect.stack()[3][0]).__file__).resolve().parent.parent
+        # plugin data
+        # NOTE: patch info is written only for the plugin itself (due to where these commands are run), 
+        # NOT the entire plugins repo. however, the git SHA will be for the entire plugins repo
+        metadata["plugin_git_sha"] = git_sha(plugin_dir)
+        metadata["plugin_tracked_git_patch"] = git_patch_tracked(plugin_dir)
+        metadata["plugin_untracked_git_patch"] = git_patch_untracked(plugin_dir)
+        
         with open(metadata_filepath, 'w') as outfile:
             json.dump(metadata, outfile, indent=2)
 

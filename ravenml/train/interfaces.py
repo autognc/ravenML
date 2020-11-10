@@ -7,12 +7,14 @@ Contains the classes for interfacing with training command group.
 import os
 import click
 import shutil
+import inspect
 from datetime import datetime
 from pathlib import Path
 from colorama import Fore
 from ravenml.utils.local_cache import RMLCache
 from ravenml.utils.question import cli_spinner, user_input, user_selects, user_confirms
 from ravenml.utils.dataset import get_dataset_names, get_dataset
+from ravenml.utils.git import git_sha, git_patch_tracked, git_patch_untracked
 from ravenml.data.interfaces import Dataset
 
 class TrainInput(object):
@@ -120,6 +122,12 @@ class TrainInput(object):
         # handle automatic metadata fields
         self.metadata['date_started_at'] = datetime.utcnow().isoformat() + "Z"
         self.metadata['dataset_used'] = self.dataset.metadata
+        rml_dir = Path(__file__).resolve().parent.parent.parent
+        self.metadata['ravenml_git_sha'] = git_sha(rml_dir)
+        self.metadata['ravenml_tracked_git_patch'] = git_patch_tracked(rml_dir)
+        self.metadata['ravenml_untracked_git_patch'] = git_patch_untracked(rml_dir)
+        # NOTE: plugin git data cannot be found yet, must wait until after plugin
+        # calls are on the stack for inspection (see process_result callback in commands.py)
         
         ## Set up fields for plugin use
         # NOTE: plugins should overwrite the architecture field to something
@@ -158,8 +166,12 @@ class TrainOutput(object):
     Attributes:
         model_path (Path): path to final exported model
         extra_files (list): list of Path objects to extra files associated with the training
+        plugin_dir (Path): path to plugin code, used for determining the plugin git info
+            Note that if a plugin is not installed from source this may fail.
     """
     def __init__(self, model_path: Path, extra_files: list):
         self.model_path = model_path
         self.extra_files = extra_files
+        # NOTE: this assumes that the file calling `init` is located at `plugin_name/plugin_name` inside plugin
+        self.plugin_dir = Path(inspect.getmodule(inspect.stack()[1][0]).__file__).resolve().parent.parent
     

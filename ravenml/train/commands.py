@@ -10,6 +10,7 @@ import json
 import shortuuid
 import boto3
 import yaml
+import inspect
 from urllib.request import urlopen
 from urllib.error import URLError
 from pathlib import Path
@@ -17,6 +18,7 @@ from ravenml.train.interfaces import TrainInput, TrainOutput
 from ravenml.utils.question import cli_spinner
 from ravenml.utils.aws import upload_file_to_s3, upload_dict_to_s3_as_json
 from ravenml.utils.plugins import LazyPluginGroup
+from ravenml.utils.git import git_sha, git_patch_tracked, git_patch_untracked
 
 EC2_INSTANCE_ID_URL = 'http://169.254.169.254/latest/meta-data/instance-id'
 
@@ -74,6 +76,13 @@ def process_result(ctx: click.Context, result: TrainOutput, config: str):
         # non-training plugin commands, the TrainInput __init__ will be called by Click
         # when process_result runs and no TrainInput is at ctx.obj
         ti = ctx.obj    
+        
+        # store git info for plugin
+        # NOTE: this will fail for plugins not installed via source
+        ti.metadata["plugin_git_sha"] = git_sha(result.plugin_dir)
+        ti.metadata["plugin_tracked_git_patch"] = git_patch_tracked(result.plugin_dir)
+        ti.metadata["plugin_untracked_git_patch"] = git_patch_untracked(result.plugin_dir)
+
         # upload if not in local mode, determined by user defined artifact_path field in config
         if not ti.config.get('artifact_path'):
             uuid = cli_spinner('Uploading artifacts...', _upload_result, result, ti.metadata, ti.plugin_metadata)
