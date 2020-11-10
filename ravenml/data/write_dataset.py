@@ -239,7 +239,7 @@ class DefaultDatasetWriter(DatasetWriter):
         # find ravenml directory (must go up three levels)
         rml_dir = Path(__file__).resolve().parent.parent.parent
         # ravenml git core data 
-        if git.is_repo(rml_dir)
+        if git.is_repo(rml_dir):
             # indicates we are in a local install (actual git repo)
             metadata["ravenml_git_sha"] = git.git_sha(rml_dir)
             metadata["ravenml_tracked_git_patch"] = git.git_patch_tracked(rml_dir)
