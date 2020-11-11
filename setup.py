@@ -1,7 +1,8 @@
 from setuptools import setup, find_packages
 from os import path, remove
-from ravenml.utils.git import is_repo, git_sha, git_patch_tracked, git_patch_untracked
 from json import dump
+from shutil import copyfile
+from ravenml.utils.git import is_repo, git_sha, git_patch_tracked, git_patch_untracked
 
 rml_dir = path.abspath(path.dirname(__file__))
 with open(path.join(rml_dir, 'README.md'), encoding='utf-8') as f:
@@ -9,15 +10,13 @@ with open(path.join(rml_dir, 'README.md'), encoding='utf-8') as f:
     
 # attempt to write git data to file
 repo = is_repo(rml_dir)
-print(repo)
 if repo:
-    print('doing a thing')
+    info = {
+        'ravenml_git_sha': git_sha(rml_dir),
+        'ravenml_tracked_git_patch': git_patch_tracked(rml_dir),
+        'ravenml_untracked_git_patch': git_patch_untracked(rml_dir)
+    }
     with open(path.join(rml_dir, 'ravenml', 'git_info.json'), 'w') as f:
-        info = {
-            'ravenml_git_sha': git_sha(rml_dir),
-            'ravenml_tracked_git_patch': git_patch_tracked(rml_dir),
-            'ravenml_untracked_git_patch': git_patch_untracked(rml_dir)
-        }
         dump(info, f, indent=2)
 
 setup(
@@ -53,6 +52,6 @@ setup(
 )
 
 # destroy git file
-# if repo:
-    # remove(path.join(rml_dir, 'ravenml', 'git_info.json'))
+if repo:
+    remove(path.join(rml_dir, 'ravenml', 'git_info.json'))
       
