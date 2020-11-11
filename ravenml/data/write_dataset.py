@@ -236,12 +236,18 @@ class DefaultDatasetWriter(DatasetWriter):
         metadata["image_ids"] = [(image_id[0].name, image_id[1]) for image_id in self.image_ids]
         metadata["filters"] = self.filter_metadata
         
-        # find ravenml directory (must go up three levels)
-        rml_dir = Path(__file__).resolve().parent.parent.parent
-        # ravenml git core data 
+        # find ravenml directory
+        # when in an editable install, file is at:
+        #   ravenml/ravenml/data/write_dataset (must go up 3 levels)
+        # when in site-packages, file is at:
+        #   ravenml/data/write_dataset (must go up 2 levels)
+        # start two levels up and do a check at 3 levels up
+        rml_dir = Path(__file__).resolve().parent.parent
         git_info = {}
-        if git.is_repo(rml_dir):
+        if git.is_repo(rml_dir.parent):
             # indicates we are in a local install (actual git repo)
+            # go one level higher for this check 
+            rml_dir = rml_dir.parent
             git_info["ravenml_git_sha"] = git.git_sha(rml_dir)
             git_info["ravenml_tracked_git_patch"] = git.git_patch_tracked(rml_dir)
             git_info["ravenml_untracked_git_patch"] = git.git_patch_untracked(rml_dir)
