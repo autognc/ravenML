@@ -67,7 +67,6 @@ def git_patch_untracked(path: Path) -> str:
 
 # path should be to package root
 def retrieve_from_pkg(path: Path):
-    print(path)
     git_info_path = path / 'git_info.json'
     if git_info_path.exists():
         with open(git_info_path, 'r') as f:

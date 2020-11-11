@@ -242,7 +242,6 @@ class DefaultDatasetWriter(DatasetWriter):
         # when in site-packages, file is at:
         #   ravenml/data/write_dataset (must go up 2 levels)
         # start two levels up and do a check at 3 levels up
-        print(Path(__file__))
         rml_dir = Path(__file__).resolve().parent.parent
         git_info = {}
         if git.is_repo(rml_dir.parent):
@@ -253,25 +252,27 @@ class DefaultDatasetWriter(DatasetWriter):
             git_info["ravenml_tracked_git_patch"] = git.git_patch_tracked(rml_dir)
             git_info["ravenml_untracked_git_patch"] = git.git_patch_untracked(rml_dir)
         else:
-            print(rml_dir)
             git_info = git.retrieve_from_pkg(rml_dir)
-            
         metadata.update(git_info)
-        # metadata["ravenml_git_sha"] = git.git_sha(rml_dir)
-        # metadata["ravenml_tracked_git_patch"] = git.git_patch_tracked(rml_dir)
-        # metadata["ravenml_untracked_git_patch"] = git.git_patch_untracked(rml_dir)
 
-        # Finds file which called 'write_metadata' method, which should be the plugin and changes to that directory
-        # NOTE: this assumes that the file calling `write_metadata` is located at `plugin_name/plugin_name` inside the plugin
+        # Find file 'write_metadata' calling file, which should be the plugin 
+        # as with ravenml directory, hierarchy differs depending on installation method 
+        # NOTE: assume the file calling `write_metadata` is located at the root of the plugin package
+        #   that is, a file like `plugin_name/plugin_name/core.py`
         # index of the caller is 3 because there are two additional layers from cli_spinner
-        # decorator and actual cli_spinner function
-        plugin_dir = Path(inspect.getmodule(inspect.stack()[3][0]).__file__).resolve().parent.parent
-        # plugin data
+        #   decorator and actual cli_spinner function
+        plugin_dir = Path(inspect.getmodule(inspect.stack()[3][0]).__file__).resolve().parent
+        git_info = {}
         # NOTE: patch info is written only for the plugin itself (due to where these commands are run), 
-        # NOT the entire plugins repo. however, the git SHA will be for the entire plugins repo
-        metadata["plugin_git_sha"] = git.git_sha(plugin_dir)
-        metadata["plugin_tracked_git_patch"] = git.git_patch_tracked(plugin_dir)
-        metadata["plugin_untracked_git_patch"] = git.git_patch_untracked(plugin_dir)
+        #   NOT the entire plugins repo. however, the git SHA will be for the entire plugins repo
+        if git.is_repo(plugin_dir.parent):
+            plugin_dir = plugin_dir.parent
+            git_info["plugin_git_sha"] = git.git_sha(plugin_dir)
+            git_info["plugin_tracked_git_patch"] = git.git_patch_tracked(plugin_dir)
+            git_info["plugin_untracked_git_patch"] = git.git_patch_untracked(plugin_dir)
+        else:
+            git_info = git.retrieve_from_pkg(plugin_dir)
+        metadata.update(git_info)
         
         with open(metadata_filepath, 'w') as outfile:
             json.dump(metadata, outfile, indent=2)
