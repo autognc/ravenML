@@ -12,7 +12,7 @@ from os import chdir, listdir
 from pathlib import Path
 
 # look for dist-info or egg-info styles
-raven_dist_info_re = re.compile("(ravenml)-?\d*\.?\d*(.dist-info|.egg-info)")
+# raven_dist_info_re = re.compile("(ravenml)-?\d*\.?\d*(.dist-info|.egg-info)")
 
 def is_repo(path: Path) -> bool:
     return '.git' in listdir(path)
@@ -66,14 +66,14 @@ def git_patch_untracked(path: Path) -> str:
     return untracked_patch.decode('utf-8') if len(err) == 0 else err.decode('utf-8')
 
 # path should be to package root
-def retrieve_from_dist_info(path: Path):
-    site_packages_dir = path.parent
-    matches = filter(raven_dist_info_re.match, os.listdir(site_packages_dir))
-    print(matches)
-
-def write_test(cmd, basename, filename):
-    values = {}
-    values['cmd'] = str(cmd)
-    values['basename'] = str(basename)
-    values['filename'] = str(filename)
-    cmd.write_file('git_info', filename, json.dumps(values, sort_keys=True))
+def retrieve_from_pkg(path: Path)
+    with open(path / 'git_info.json', 'w') as f:
+        return json.load(f)
+    
+    # git_info["ravenml_git_sha"] = git.git_sha(rml_dir)
+    # git_info["ravenml_tracked_git_patch"] = git.git_patch_tracked(rml_dir)
+    # git_info["ravenml_untracked_git_patch"] = git.git_patch_untracked(rml_dir)
+    
+    # site_packages_dir = path.parent
+    # matches = filter(raven_dist_info_re.match, os.listdir(site_packages_dir))
+    # print(matches)

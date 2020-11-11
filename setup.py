@@ -9,6 +9,12 @@ with open(path.join(rml_dir, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
     
 # attempt to write git data to file
+# this will work in 3/4 install cases:
+#   1. PyPI
+#   2. GitHub clone
+#   3. Local (editable), NOTE in this case there is no need
+#       for the file, as ravenml will find git information at runtime
+# NOTE: does NOT work in the GitHub tarball installation case
 repo = is_repo(rml_dir)
 if repo:
     info = {
@@ -47,11 +53,14 @@ setup(
     ],
     entry_points={
         'console_scripts': ['ravenml=ravenml.cli:cli'],
-        # 'egg_info.writers': ['git_info.json = ravenml.utils.git:write_test']
     }
 )
 
-# destroy git file
+# destroy git file after install
+# NOTE: this is pointless for GitHub clone case, since the clone is deleted
+# after install. It is necessary for local (editable) installs to prevent
+# the file from corrupting the git repo, and when creating a dist for PyPI 
+# for the same reason.
 if repo:
     remove(path.join(rml_dir, 'ravenml', 'git_info.json'))
       

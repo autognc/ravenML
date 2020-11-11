@@ -239,14 +239,19 @@ class DefaultDatasetWriter(DatasetWriter):
         # find ravenml directory (must go up three levels)
         rml_dir = Path(__file__).resolve().parent.parent.parent
         # ravenml git core data 
+        git_info = {}
         if git.is_repo(rml_dir):
             # indicates we are in a local install (actual git repo)
-            metadata["ravenml_git_sha"] = git.git_sha(rml_dir)
-            metadata["ravenml_tracked_git_patch"] = git.git_patch_tracked(rml_dir)
-            metadata["ravenml_untracked_git_patch"] = git.git_patch_untracked(rml_dir)
+            git_info["ravenml_git_sha"] = git.git_sha(rml_dir)
+            git_info["ravenml_tracked_git_patch"] = git.git_patch_tracked(rml_dir)
+            git_info["ravenml_untracked_git_patch"] = git.git_patch_untracked(rml_dir)
         else:
-            # git.retrieve_from_dist_info(rml_dir)
-            pass
+            git_info = git.retrieve_from_pkg(rml_dir)
+            
+        metadata.update(git_info)
+        # metadata["ravenml_git_sha"] = git.git_sha(rml_dir)
+        # metadata["ravenml_tracked_git_patch"] = git.git_patch_tracked(rml_dir)
+        # metadata["ravenml_untracked_git_patch"] = git.git_patch_untracked(rml_dir)
 
         # Finds file which called 'write_metadata' method, which should be the plugin and changes to that directory
         # NOTE: this assumes that the file calling `write_metadata` is located at `plugin_name/plugin_name` inside the plugin
@@ -256,9 +261,9 @@ class DefaultDatasetWriter(DatasetWriter):
         # plugin data
         # NOTE: patch info is written only for the plugin itself (due to where these commands are run), 
         # NOT the entire plugins repo. however, the git SHA will be for the entire plugins repo
-        metadata["plugin_git_sha"] = git_sha(plugin_dir)
-        metadata["plugin_tracked_git_patch"] = git_patch_tracked(plugin_dir)
-        metadata["plugin_untracked_git_patch"] = git_patch_untracked(plugin_dir)
+        metadata["plugin_git_sha"] = git.git_sha(plugin_dir)
+        metadata["plugin_tracked_git_patch"] = git.git_patch_tracked(plugin_dir)
+        metadata["plugin_untracked_git_patch"] = git.git_patch_untracked(plugin_dir)
         
         with open(metadata_filepath, 'w') as outfile:
             json.dump(metadata, outfile, indent=2)
