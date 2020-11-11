@@ -242,6 +242,7 @@ class DefaultDatasetWriter(DatasetWriter):
         # when in site-packages, file is at:
         #   ravenml/data/write_dataset (must go up 2 levels)
         # start two levels up and do a check at 3 levels up
+        print(Path(__file__))
         rml_dir = Path(__file__).resolve().parent.parent
         git_info = {}
         if git.is_repo(rml_dir.parent):
@@ -252,6 +253,7 @@ class DefaultDatasetWriter(DatasetWriter):
             git_info["ravenml_tracked_git_patch"] = git.git_patch_tracked(rml_dir)
             git_info["ravenml_untracked_git_patch"] = git.git_patch_untracked(rml_dir)
         else:
+            print(rml_dir)
             git_info = git.retrieve_from_pkg(rml_dir)
             
         metadata.update(git_info)
