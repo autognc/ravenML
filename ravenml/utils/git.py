@@ -67,8 +67,11 @@ def git_patch_untracked(path: Path) -> str:
 
 # path should be to package root
 def retrieve_from_pkg(path: Path):
-    with open(path / 'git_info.json', 'r') as f:
-        return json.load(f)
+    git_info_path = path / 'git_info.json'
+    if git_info_path.exists():
+        with open(git_info_path, 'r') as f:
+            return json.load(f)
+    return {}
     
     # git_info["ravenml_git_sha"] = git.git_sha(rml_dir)
     # git_info["ravenml_tracked_git_patch"] = git.git_patch_tracked(rml_dir)
