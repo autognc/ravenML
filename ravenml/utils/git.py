@@ -66,7 +66,7 @@ def git_patch_untracked(path: Path) -> str:
     return untracked_patch.decode('utf-8') if len(err) == 0 else err.decode('utf-8')
 
 # path should be to package root
-def retrieve_from_pkg(path: Path)
+def retrieve_from_pkg(path: Path):
     with open(path / 'git_info.json', 'w') as f:
         return json.load(f)
     
