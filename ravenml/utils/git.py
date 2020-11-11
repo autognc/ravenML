@@ -15,7 +15,10 @@ from pathlib import Path
 # raven_dist_info_re = re.compile("(ravenml)-?\d*\.?\d*(.dist-info|.egg-info)")
 
 def is_repo(path: Path) -> bool:
-    return '.git' in listdir(path)
+    while path:
+        if (path / '.git').exists():
+            return True
+        path = path.parent
 
 def git_sha(path: Path) -> str:
     # store cwd and change to path
