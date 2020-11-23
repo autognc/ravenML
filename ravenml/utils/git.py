@@ -10,8 +10,6 @@ import json
 from os import chdir, listdir
 from pathlib import Path
 
-# TODO: docstrings throughout
-
 def is_repo(path: Path) -> bool:
     """ Checks if the given path is in a github repository by detecting a .git directory.
     

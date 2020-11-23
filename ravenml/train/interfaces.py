@@ -187,5 +187,5 @@ class TrainOutput(object):
         self.extra_files = extra_files
         # NOTE: this assumes that the file calling `init` is located at `plugin_name/plugin_name` inside plugin
         #   that is, a file like `plugin_name/plugin_name/core.py`
-        self.plugin_dir = Path(inspect.getmodule(inspect.stack()[1][0]).__file__).resolve().parent.parent
+        self.plugin_dir = Path(inspect.getmodule(inspect.stack()[1][0]).__file__).resolve().parent
     

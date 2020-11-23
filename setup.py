@@ -6,6 +6,7 @@ from ravenml.utils.git import is_repo, git_sha, git_patch_tracked, git_patch_unt
 
 pkg_name = 'ravenml'
 
+rml_dir = Path(__file__).resolve().parent
 with open(rml_dir / 'README.md', encoding='utf-8') as f:
     long_description = f.read()
     
@@ -17,13 +18,12 @@ with open(rml_dir / 'README.md', encoding='utf-8') as f:
 #   3. Local (editable), however NOTE in this case there is no need
 #       for the file, as ravenml will find git information at runtime
 #       in order to include patch data
-rml_dir = Path(__file__).resolve().parent
-repo = is_repo(rml_dir)
-if repo:
+repo_root = is_repo(rml_dir)
+if repo_root:
     info = {
-        'ravenml_git_sha': git_sha(rml_dir),
-        'ravenml_tracked_git_patch': git_patch_tracked(rml_dir),
-        'ravenml_untracked_git_patch': git_patch_untracked(rml_dir)
+        'ravenml_git_sha': git_sha(repo_root),
+        'ravenml_tracked_git_patch': git_patch_tracked(repo_root),
+        'ravenml_untracked_git_patch': git_patch_untracked(repo_root)
     }
     with open(rml_dir / pkg_name / 'git_info.json', 'w') as f:
         dump(info, f, indent=2)
@@ -64,6 +64,6 @@ setup(
 # after install. It is necessary for local (editable) installs to prevent
 # the file from corrupting the git repo, and when creating a dist for PyPI 
 # for the same reason.
-if repo:
+if repo_root:
     remove(rml_dir / pkg_name / 'git_info.json')
       
