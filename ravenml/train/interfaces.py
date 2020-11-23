@@ -132,9 +132,9 @@ class TrainInput(object):
         git_info = {}
         if git.is_repo(rml_dir.parent):
             rml_dir = rml_dir.parent
-            git_info['ravenml_git_sha'] = git_sha(rml_dir)
-            git_info['ravenml_tracked_git_patch'] = git_patch_tracked(rml_dir)
-            git_info['ravenml_untracked_git_patch'] = git_patch_untracked(rml_dir)
+            git_info['ravenml_git_sha'] = git.git_sha(rml_dir)
+            git_info['ravenml_tracked_git_patch'] = git.git_patch_tracked(rml_dir)
+            git_info['ravenml_untracked_git_patch'] = git.git_patch_untracked(rml_dir)
         else:
             git_info = git.retrieve_from_pkg(rml_dir)
         self.metadata.update(git_info)
@@ -185,7 +185,6 @@ class TrainOutput(object):
     def __init__(self, model_path: Path, extra_files: list):
         self.model_path = model_path
         self.extra_files = extra_files
-        # NOTE: this assumes that the file calling `init` is located at `plugin_name/plugin_name` inside plugin
-        #   that is, a file like `plugin_name/plugin_name/core.py`
+        # file calling `init` must be inside plugin
         self.plugin_dir = Path(inspect.getmodule(inspect.stack()[1][0]).__file__).resolve().parent
     
