@@ -1,20 +1,23 @@
 from setuptools import setup, find_packages
-from os import path, remove
+from os import remove
+from pathlib import Path
 from json import dump
-from shutil import copyfile
 from ravenml.utils.git import is_repo, git_sha, git_patch_tracked, git_patch_untracked
 
-rml_dir = path.abspath(path.dirname(__file__))
-with open(path.join(rml_dir, 'README.md'), encoding='utf-8') as f:
+pkg_name = 'ravenml'
+
+with open(rml_dir / 'README.md', encoding='utf-8') as f:
     long_description = f.read()
     
 # attempt to write git data to file
+# NOTE: does NOT work in the GitHub tarball installation case
 # this will work in 3/4 install cases:
 #   1. PyPI
 #   2. GitHub clone
-#   3. Local (editable), NOTE in this case there is no need
+#   3. Local (editable), however NOTE in this case there is no need
 #       for the file, as ravenml will find git information at runtime
-# NOTE: does NOT work in the GitHub tarball installation case
+#       in order to include patch data
+rml_dir = Path(__file__).resolve().parent
 repo = is_repo(rml_dir)
 if repo:
     info = {
@@ -22,11 +25,11 @@ if repo:
         'ravenml_tracked_git_patch': git_patch_tracked(rml_dir),
         'ravenml_untracked_git_patch': git_patch_untracked(rml_dir)
     }
-    with open(path.join(rml_dir, 'ravenml', 'git_info.json'), 'w') as f:
+    with open(rml_dir / pkg_name / 'git_info.json', 'w') as f:
         dump(info, f, indent=2)
 
 setup(
-    name='ravenml',
+    name=pkg_name,
     version='1.2',
     description='ML Training CLI Tool',
     long_description = long_description,
@@ -37,7 +40,7 @@ setup(
     keywords= ['machine learning', 'data science'],
     download_url = 'https://github.com/autognc/ravenML/archive/v1.2.tar.gz',
     packages=find_packages(),
-    package_data={'ravenml': ['git_info.json']},
+    package_data={pkg_name: ['git_info.json']},
     install_requires=[
         'Click>=7.0',
         'questionary>=1.0.2',
@@ -52,7 +55,7 @@ setup(
         'moto'
     ],
     entry_points={
-        'console_scripts': ['ravenml=ravenml.cli:cli'],
+        'console_scripts': [f'{pkg_name}={pkg_name}.cli:cli'],
     }
 )
 
@@ -62,5 +65,5 @@ setup(
 # the file from corrupting the git repo, and when creating a dist for PyPI 
 # for the same reason.
 if repo:
-    remove(path.join(rml_dir, 'ravenml', 'git_info.json'))
+    remove(rml_dir / pkg_name / 'git_info.json')
       

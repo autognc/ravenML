@@ -237,39 +237,26 @@ class DefaultDatasetWriter(DatasetWriter):
         metadata["filters"] = self.filter_metadata
         
         # find ravenml directory
-        # when in an editable install, file is at:
-        #   ravenml/ravenml/data/write_dataset (must go up 3 levels)
-        # when in site-packages, file is at:
-        #   ravenml/data/write_dataset (must go up 2 levels)
-        # start two levels up and do a check at 3 levels up
-        rml_dir = Path(__file__).resolve().parent.parent
+        rml_dir = Path(__file__).resolve().parent
+        repo_root = git.is_repo(rml_dir)
         git_info = {}
-        if git.is_repo(rml_dir.parent):
-            # indicates we are in a local install (actual git repo)
-            # go one level higher for this check 
-            rml_dir = rml_dir.parent
-            git_info["ravenml_git_sha"] = git.git_sha(rml_dir)
-            git_info["ravenml_tracked_git_patch"] = git.git_patch_tracked(rml_dir)
-            git_info["ravenml_untracked_git_patch"] = git.git_patch_untracked(rml_dir)
+        if repo_root:
+            git_info["ravenml_git_sha"] = git.git_sha(repo_root)
+            git_info["ravenml_tracked_git_patch"] = git.git_patch_tracked(repo_root)
+            git_info["ravenml_untracked_git_patch"] = git.git_patch_untracked(repo_root)
         else:
             git_info = git.retrieve_from_pkg(rml_dir)
         metadata.update(git_info)
 
-        # Find file 'write_metadata' calling file, which should be the plugin 
-        # as with ravenml directory, hierarchy differs depending on installation method 
-        # NOTE: assume the file calling `write_metadata` is located at the root of the plugin package
-        #   that is, a file like `plugin_name/plugin_name/core.py`
-        # index of the caller is 3 because there are two additional layers from cli_spinner
-        #   decorator and actual cli_spinner function
+        # Find file 'write_metadata' calling file, which must be somewhere in the plugin 
         plugin_dir = Path(inspect.getmodule(inspect.stack()[3][0]).__file__).resolve().parent
+        repo_root = git.is_repo(plugin_dir)
         git_info = {}
-        # NOTE: patch info is written only for the plugin itself (due to where these commands are run), 
-        #   NOT the entire plugins repo. however, the git SHA will be for the entire plugins repo
-        if git.is_repo(plugin_dir.parent):
-            plugin_dir = plugin_dir.parent
-            git_info["plugin_git_sha"] = git.git_sha(plugin_dir)
-            git_info["plugin_tracked_git_patch"] = git.git_patch_tracked(plugin_dir)
-            git_info["plugin_untracked_git_patch"] = git.git_patch_untracked(plugin_dir)
+        if repo_root:
+            git_info["plugin_git_sha"] = git.git_sha(repo_root)
+            # note running the patch commands in the repo root will include patches for other plugins
+            git_info["plugin_tracked_git_patch"] = git.git_patch_tracked(repo_root)
+            git_info["plugin_untracked_git_patch"] = git.git_patch_untracked(repo_root)
         else:
             git_info = git.retrieve_from_pkg(plugin_dir)
         metadata.update(git_info)
