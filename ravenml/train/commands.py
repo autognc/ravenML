@@ -19,6 +19,7 @@ from ravenml.train.interfaces import TrainInput, TrainOutput
 from ravenml.utils.question import cli_spinner
 from ravenml.utils.aws import upload_file_to_s3, upload_dict_to_s3_as_json
 from ravenml.utils.plugins import LazyPluginGroup
+from ravenml.utils.config import load_yaml_config
 
 EC2_INSTANCE_ID_URL = 'http://169.254.169.254/latest/meta-data/instance-id'
 
@@ -42,20 +43,8 @@ def train(ctx: click.Context, config: str):
     # check if config flag was passed, if not simply carry on to child command
     if config:
         # attempt to load config
-        try:
-            with open(Path(config), 'r') as stream:
-                train_config = yaml.safe_load(stream)
-        except FileNotFoundError as e:
-            hint = 'config, no such file exists'
-            raise click.exceptions.BadParameter(config, ctx=ctx, param=config, param_hint=hint)
-        except yaml.parser.ParserError as e:
-            hint = 'config file, formatting of file is invalid'
-            raise click.exceptions.BadParameter(config, ctx=ctx, param=config, param_hint=hint)
-        except Exception as e:
-            hint = 'unknown, unknown error occurred with config file.'
-            print('-- ERROR BELOW --')
-            print(e)
-            raise click.exceptions.BadParameter(config, ctx=ctx, param=config, param_hint=hint)
+        # NOTE: this function will raise a click error if there is an issue loading config
+        train_config = load_yaml_config(Path(config))
         # trigger TrainInput creation, note this may prompt the user depending on the config file used
         ctx.obj = TrainInput(train_config, ctx.invoked_subcommand)
 

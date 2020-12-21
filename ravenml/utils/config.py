@@ -9,6 +9,7 @@ import yaml
 from copy import deepcopy
 from pathlib import Path
 from ravenml.utils.local_cache import RMLCache
+from click.exceptions import BadParameter
 
 config_cache = RMLCache()
 
@@ -54,3 +55,33 @@ def update_config(config: dict):
     config_cache.ensure_exists()
     with open(config_cache.path / Path('config.yml'), 'w') as outfile:
         yaml.dump(config, outfile, default_flow_style=False)
+    
+def load_yaml_config(path: Path):
+    """Loads a YAML config file. 
+    
+    Used in the `train` and `data` command groups when creating datasets or running trainings.
+
+    Args:
+        path (pathlib.Path): path to YAML config file
+    
+    Returns:
+        dict: loaded config
+    
+    Raises:
+        click.exceptions.BadParameter: any error failing load of config file raises this
+            with an appropriate error message for the particular error
+    """
+    try:
+        with open(path, 'r') as stream:
+            return yaml.safe_load(stream)
+    except FileNotFoundError as e:
+        hint = 'config, no such file exists'
+        raise BadParameter(config, ctx=ctx, param=config, param_hint=hint)
+    except yaml.parser.ParserError as e:
+        hint = 'config file, formatting of file is invalid'
+        raise BadParameter(config, ctx=ctx, param=config, param_hint=hint)
+    except Exception as e:
+        hint = 'unknown, unknown error occurred with config file.'
+        print('-- ERROR BELOW --')
+        print(e)
+        raise BadParameter(config, ctx=ctx, param=config, param_hint=hint)

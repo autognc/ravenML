@@ -20,7 +20,7 @@ from ravenml.utils.question import cli_spinner, user_confirms
 from ravenml.data.interfaces import CreateInput
 from ravenml.data.options import pass_create
 from ravenml.data.interfaces import CreateInput, CreateOutput
-from ravenml.utils.config import get_config
+from ravenml.utils.config import get_config, load_yaml_config
 from ravenml.utils.aws import upload_directory
 
 # metedata fields to exclude when printing metadata to the user 
@@ -72,22 +72,11 @@ def create(ctx: click.Context, config: str):
         config (str): user config
     """
     if config:
-    # load config
-        try:
-            with open(Path(config), 'r') as stream:
-                config = yaml.safe_load(stream)
-        except FileNotFoundError as e:
-            hint = 'config, no such file exists'
-            raise click.exceptions.BadParameter(config, ctx=ctx, param=config, param_hint=hint)
-        except yaml.parser.ParserError as e:
-            hint = 'config file, formatting of file is invalid'
-            raise click.exceptions.BadParameter(config, ctx=ctx, param=config, param_hint=hint)
-        except Exception as e:
-            hint = 'unknown, unknown error occurred with config file.'
-            print('-- ERROR BELOW --')
-            print(e)
-            raise click.exceptions.BadParameter(config, ctx=ctx, param=config, param_hint=hint)
-        ctx.obj = CreateInput(config, ctx.invoked_subcommand)
+        # load config
+        # NOTE: this function will raise a click error if there is an issue loading config
+        data_config = load_yaml_config(Path(config))
+        # trigger CreateInput creation, note this may prompt the user depending on the config file used
+        ctx.obj = CreateInput(data_config, ctx.invoked_subcommand)
 
 # dataset given by a plugin when create is called, see train.commands.process_result for example
 @create.resultcallback()
