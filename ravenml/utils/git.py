@@ -10,7 +10,7 @@ import json
 from os import chdir, listdir
 from pathlib import Path
 
-def is_repo(path: Path) -> bool:
+def is_repo(path: Path):
     """ Checks if the given path is in a github repository by detecting a .git directory.
     
     Starting at the given path, the tree is traversed recursively until the .git is found,
