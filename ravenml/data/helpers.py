@@ -296,7 +296,7 @@ def read_json_metadata(dir_entry, image_id):
         dataframe with image_id key and True/False values
         for each tag.
     """
-    with open(dir_entry.path, "r") as read_file:
+    with open(dir_entry, "r") as read_file:
         data = json.load(read_file)
     tag_list = data.get("tags", ['untagged'])
     if len(tag_list) == 0:

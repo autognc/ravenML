@@ -45,8 +45,16 @@ def train(ctx: click.Context, config: str):
         try:
             with open(Path(config), 'r') as stream:
                 train_config = yaml.safe_load(stream)
-        except Exception as e:
+        except FileNotFoundError as e:
             hint = 'config, no such file exists'
+            raise click.exceptions.BadParameter(config, ctx=ctx, param=config, param_hint=hint)
+        except yaml.parser.ParserError as e:
+            hint = 'config file, formatting of file is invalid'
+            raise click.exceptions.BadParameter(config, ctx=ctx, param=config, param_hint=hint)
+        except Exception as e:
+            hint = 'unknown, unknown error occurred with config file.'
+            print('-- ERROR BELOW --')
+            print(e)
             raise click.exceptions.BadParameter(config, ctx=ctx, param=config, param_hint=hint)
         # trigger TrainInput creation, note this may prompt the user depending on the config file used
         ctx.obj = TrainInput(train_config, ctx.invoked_subcommand)
