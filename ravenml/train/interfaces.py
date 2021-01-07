@@ -7,6 +7,8 @@ Contains the classes for interfacing with training command group.
 import os
 import click
 import shutil
+import inspect
+import ravenml.utils.git as git
 from datetime import datetime
 from pathlib import Path
 from colorama import Fore
@@ -120,6 +122,25 @@ class TrainInput(object):
         # handle automatic metadata fields
         self.metadata['date_started_at'] = datetime.utcnow().isoformat() + "Z"
         self.metadata['dataset_used'] = self.dataset.metadata
+        # find ravenml directory
+        # when in an editable install, file is at:
+        #   ravenml/ravenml/data/write_dataset (must go up 3 levels)
+        # when in site-packages, file is at:
+        #   ravenml/data/write_dataset (must go up 2 levels)
+        # start two levels up and do a check at 3 levels up
+        rml_dir = Path(__file__).resolve().parent.parent
+        git_info = {}
+        if git.is_repo(rml_dir.parent):
+            rml_dir = rml_dir.parent
+            git_info['ravenml_git_sha'] = git.git_sha(rml_dir)
+            git_info['ravenml_tracked_git_patch'] = git.git_patch_tracked(rml_dir)
+            git_info['ravenml_untracked_git_patch'] = git.git_patch_untracked(rml_dir)
+        else:
+            git_info = git.retrieve_from_pkg(rml_dir)
+        self.metadata.update(git_info)
+        # NOTE: plugin git data cannot be found yet, must wait until after plugin
+        # calls are on the stack for inspection. We add plugin git info when processing results 
+        # (see process_result callback in commands.py)
         
         ## Set up fields for plugin use
         # NOTE: plugins should overwrite the architecture field to something
@@ -158,8 +179,12 @@ class TrainOutput(object):
     Attributes:
         model_path (Path): path to final exported model
         extra_files (list): list of Path objects to extra files associated with the training
+        plugin_dir (Path): path to plugin code, used for determining the plugin git info
+            Note that if a plugin is installed from tarball, git info will not be available.
     """
     def __init__(self, model_path: Path, extra_files: list):
         self.model_path = model_path
         self.extra_files = extra_files
+        # file calling `init` must be inside plugin
+        self.plugin_dir = Path(inspect.getmodule(inspect.stack()[1][0]).__file__).resolve().parent
     

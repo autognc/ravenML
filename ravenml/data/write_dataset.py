@@ -1,5 +1,6 @@
-import os, shutil, time, json
+import os, inspect, shutil, time, json
 import pandas as pd
+import ravenml.utils.git as git
 from random import sample
 from pathlib import Path
 from datetime import datetime
@@ -309,8 +310,34 @@ class DefaultDatasetWriter(DatasetWriter):
         metadata["training_type"] = self.plugin_name
         metadata["image_ids"] = [(image_id[0].name, image_id[1]) for image_id in self.image_ids]
         metadata["filters"] = self.filter_metadata
+        
+        # find ravenml directory
+        rml_dir = Path(__file__).resolve().parent
+        repo_root = git.is_repo(rml_dir)
+        git_info = {}
+        if repo_root:
+            git_info["ravenml_git_sha"] = git.git_sha(repo_root)
+            git_info["ravenml_tracked_git_patch"] = git.git_patch_tracked(repo_root)
+            git_info["ravenml_untracked_git_patch"] = git.git_patch_untracked(repo_root)
+        else:
+            git_info = git.retrieve_from_pkg(rml_dir)
+        metadata.update(git_info)
+
+        # Find file 'write_metadata' calling file, which must be somewhere in the plugin 
+        plugin_dir = Path(inspect.getmodule(inspect.stack()[3][0]).__file__).resolve().parent
+        repo_root = git.is_repo(plugin_dir)
+        git_info = {}
+        if repo_root:
+            git_info["plugin_git_sha"] = git.git_sha(repo_root)
+            # note running the patch commands in the repo root will include patches for other plugins
+            git_info["plugin_tracked_git_patch"] = git.git_patch_tracked(repo_root)
+            git_info["plugin_untracked_git_patch"] = git.git_patch_untracked(repo_root)
+        else:
+            git_info = git.retrieve_from_pkg(plugin_dir)
+        metadata.update(git_info)
+        
         with open(metadata_filepath, 'w') as outfile:
-            json.dump(metadata, outfile) 
+            json.dump(metadata, outfile, indent=2)
 
     def write_dataset(self, associated_files):
         """Method is parent function for writing out complete dataset. Method first

@@ -10,6 +10,8 @@ import json
 import shortuuid
 import boto3
 import yaml
+import inspect
+import ravenml.utils.git as git
 from urllib.request import urlopen
 from urllib.error import URLError
 from pathlib import Path
@@ -74,6 +76,20 @@ def process_result(ctx: click.Context, result: TrainOutput, config: str):
         # non-training plugin commands, the TrainInput __init__ will be called by Click
         # when process_result runs and no TrainInput is at ctx.obj
         ti = ctx.obj    
+        
+        # store git info for plugin
+        # NOTE: this will fail for plugins not installed via source
+        plugin_repo_root = git.is_repo(result.plugin_dir)
+        git_info = {}
+        if plugin_repo_root:
+            git_info["plugin_git_sha"] = git.git_sha(plugin_repo_root)
+            # note running the patch commands in repo root will include patches for all plugins
+            git_info["plugin_tracked_git_patch"] = git.git_patch_tracked(plugin_repo_root)
+            git_info["plugin_untracked_git_patch"] = git.git_patch_untracked(plugin_repo_root)
+        else:
+            git_info = git.retrieve_from_pkg(result.plugin_dir)
+        ti.metadata.update(git_info)
+
         # upload if not in local mode, determined by user defined artifact_path field in config
         if not ti.config.get('artifact_path'):
             uuid = cli_spinner('Uploading artifacts...', _upload_result, result, ti.metadata, ti.plugin_metadata)
