@@ -263,7 +263,7 @@ class DefaultDatasetWriter(DatasetWriter):
                 imageset_to_image_ids_dict[os.path.basename(image_id[0])].append(image_id)
 
         for image_id in self.image_ids:
-            temp = read_json_metadata(image_id[0] / f'{image_id[1]}{self.metadata_format[1]}', image_id[1])
+            temp = read_json_metadata(image_id[0] / f'meta_{image_id[1]}{self.metadata_format[1]}', image_id[1])
             self.tags_df = pd.concat((self.tags_df, temp), sort=False)
         self.tags_df = self.tags_df.fillna(False)
         self.image_ids = default_filter(self.tags_df, self.filter_metadata)
