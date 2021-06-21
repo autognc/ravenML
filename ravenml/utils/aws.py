@@ -1,7 +1,9 @@
 import os
+import aioboto3
 import boto3
 import json
 import subprocess
+import asyncio
 from pathlib import Path
 from ravenml.utils.config import get_config
 from ravenml.utils.local_cache import RMLCache
@@ -53,6 +55,77 @@ def download_prefix(bucket_name: str, prefix: str, cache: RMLCache, custom_path:
         return True
     except:
         return False
+
+def download_imageset_file(prefix: str, local_path: str):
+    """Downloads file into the provided location. Meant for plugins to
+        download imageset-wide required files, not images or related information
+
+    Args:
+        prefix (str): path to s3 file
+        local_path (str): local path for where files are
+            downloaded to
+
+    Returns:
+        bool: T if successful, F if no objects found
+    """
+    bucketConfig = get_config()
+    image_bucket_name = bucketConfig.get('image_bucket_name')
+    try:
+        s3_uri = 's3://' + image_bucket_name + '/' + prefix 
+
+        subprocess.call(["aws", "s3", "cp", s3_uri, str(local_path), '--quiet'])
+        return True
+    except:
+        return False
+
+async def conditional_download(bucket_name, prefix, local_path, cond_func = lambda x: True):
+    """Downloads all files with the specified prefix into the provided local cache based on a condition.
+
+    Args:
+        bucket_name (str): name of bucket
+        prefix (str): prefix to filter on
+        local_path (str): where to download to
+        cond_func (function, optional): boolean function specifying which
+            files to download
+
+    Returns:
+        bool: T if successful, F if no objects found
+    """
+    try:
+        async with aioboto3.resource("s3") as s3:
+            bucket = await s3.Bucket(bucket_name)
+            async for s3_object in bucket.objects.filter(Prefix=prefix+"/"):
+                if cond_func(s3_object.key.split('/')[-1]) and not os.path.exists(local_path / s3_object.key):
+                    await bucket.download_file(s3_object.key, local_path / s3_object.key)
+    except:
+        return False
+    return True
+
+def download_file_list(bucket_name, file_list):
+    """Downloads all files with the specified prefix into the provided local cache based on a condition.
+
+    Args:
+        bucket_name (str): name of bucket
+        file_list (str): list of files in format [(s3_prefix, local_path)] for 
+            what to download
+
+    Returns:
+        bool: T if successful, F if no objects found
+    """
+    async def download_helper(bucket_name, file_list):
+        async with aioboto3.resource("s3") as s3:
+            bucket = await s3.Bucket(bucket_name)
+            for f in file_list:
+                if not os.path.exists(f[1]):
+                    try:
+                        await bucket.download_file(f[0], f[1])
+                    except Exception as e:
+                        if e.response['Error']['Code'] != '404':
+                            return False
+        return True
+
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(download_helper(bucket_name, file_list))
 
 ### UPLOAD FUNCTIONS ###
 def upload_file_to_s3(prefix: str, file_path: Path, alternate_name=None):

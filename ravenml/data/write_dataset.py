@@ -1,4 +1,4 @@
-import os, shutil, time, json
+import os, shutil, time, json, asyncio
 import pandas as pd
 from random import sample
 from pathlib import Path
@@ -7,6 +7,7 @@ from ravenml.data.interfaces import CreateInput
 from ravenml.utils.question import cli_spinner, cli_spinner_wrapper, DecoratorSuperClass, user_input
 from ravenml.utils.config import get_config
 from ravenml.data.helpers import default_filter, copy_associated_files, split_data, read_json_metadata
+from ravenml.utils.aws import conditional_download, download_file_list
 
 class DatasetWriter(DecoratorSuperClass):
     """Interface for creating datasets, methods are in order of what is expected to be 
@@ -46,7 +47,8 @@ class DatasetWriter(DecoratorSuperClass):
             created_by (String): name of person creating dataset
             comments (String): comments on dataset
             plugin_name (String): name of the plugin being used
-            imageset_paths (list): list of paths to all imagesets being used
+            imageset_paths (list): list of paths to all imagesets being used,
+                is empty when doing lazy loading.
             tags_df (pandas dataframe): after load_image_ids() is run, holds 
                 tags associated with each image_id
             image_ids (list): list of tuples containing a path to an imageset
@@ -73,6 +75,8 @@ class DatasetWriter(DecoratorSuperClass):
         self.filter_metadata = {"groups": []}
         self.obj_dict = {}
         self.metadata_format = None
+        self.lazy_loading = create.lazy_loading
+        self.imageset_cache = create.imageset_cache
     
     @cli_spinner_wrapper("Loading Image Ids...")
     def load_image_ids(self):
@@ -194,6 +198,19 @@ class DefaultDatasetWriter(DatasetWriter):
         self.metadata_format = metadata_format
         metadata_prefix = metadata_format[0]
         metadata_suffix = metadata_format[1]
+
+        if self.lazy_loading:
+            bucketConfig = get_config()
+            image_bucket_name = bucketConfig.get('image_bucket_name')
+            metadata_cond = lambda x : x.startswith(metadata_prefix) and x.endswith(metadata_suffix)
+            loop = asyncio.get_event_loop()
+
+            for imageset in self.imageset_paths:
+                loop.run_until_complete(conditional_download(image_bucket_name, 
+                                                                os.path.basename(imageset), 
+                                                                self.imageset_cache.path / 'imagesets',
+                                                                metadata_cond))
+
         if metadata_suffix != '.json':
             raise Exception("Currently non-json metadata files are not supported for the default loading of image ids")
         
@@ -206,18 +223,19 @@ class DefaultDatasetWriter(DatasetWriter):
                 image_id = dir_entry.name.replace(metadata_prefix, '').replace(metadata_suffix, '')
                 self.image_ids.append((data_dir, image_id))
 
-    def set_size_filter(self, set_sizes: dict=None):
+    def set_size_filter(self, set_sizes: dict=None, associated_files: list=[]):
         """Method is expected to only be called after 'load_image_ids' is called, as it relies on 
             'self.image_ids' to be prepopulated. Method filters by choosing specified amount of images
-            from each imageset.
+            from each imageset. If LazyLoading is enabled, also downloads associated files.
 
             If overridden, method is expected to set 'self.image_ids' to whatever image_ids are still
             to be used after filtering. 'self.filter_metadata' also needs to be set to a dict containing
             imageset names as keys and lists of image_ids as values.
 
         Args:
-            set_sizes (dict): contains the amoung of images from each imageset in the following format,
+            set_sizes (dict): contains the amount of images from each imageset in the following format,
                 { imageset_name (str) : num_images (int) }
+            associated_files (list): contains file formats for all files associated with an image id
         Variables Needed:
             image_ids (list): needed for filtering
         """
@@ -240,6 +258,15 @@ class DefaultDatasetWriter(DatasetWriter):
 
         # Updates image_ids with the new information
         self.image_ids = filtered_image_ids
+
+        if self.lazy_loading:
+            bucketConfig = get_config()
+            image_bucket_name = bucketConfig.get('image_bucket_name')
+
+            files_to_download = [(os.path.basename(image_id[0]) + '/' + file_format[0] + image_id[1] + file_format[1],
+                                    str(image_id[0]) + '/' + file_format[0] + image_id[1] + file_format[1]) for image_id in self.image_ids for file_format in associated_files]
+
+            cli_spinner("Downloading Files...", download_file_list, image_bucket_name, files_to_download)
 
     def interactive_tag_filter(self):
         """Method is expected to only be called after 'load_image_ids' is called, as it relies on 
@@ -267,20 +294,6 @@ class DefaultDatasetWriter(DatasetWriter):
         self.tags_df = self.tags_df.fillna(False)
         self.image_ids = default_filter(self.tags_df, self.filter_metadata)
 
-    def load_data(self):
-        """Method is expected to be called after 'load_image_ids' and filtering methods if filtering is
-            desired. Method goes through each image_id and copies its corresponing files into a temp directory
-            which will be later used by the plugin to create their dataset.
-
-            If overloaded, method is expected to copy all files the plugin needs into the provided 'temp_dir'.
-
-        Variables Needed:
-            image_ids (list): needed to find what needs to be copied (provided by 'load_image_ids'/filtering)
-            temp_dir (Path): needed to know where to copy to (provided by 'create' input)
-            associated_files (dict): needed to know what files need to be copied (provided by plugin)
-        """
-        copy_associated_files(self.image_ids, self.temp_dir, self.associated_files)
-    
     def write_metadata(self):
         """Method writes out metadata in JSON format in file 'metadata.json',
             in root directory of dataset.

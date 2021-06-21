@@ -10,6 +10,7 @@ import click
 import os
 import shutil
 import json
+import asyncio
 from pathlib import Path
 from datetime import datetime
 from ravenml.utils.local_cache import RMLCache
@@ -94,7 +95,16 @@ class CreateInput(object):
             ## Download imagesets
             self.imageset_cache.ensure_subpath_exists('imagesets')
             self.imageset_paths = []
-            self.download_imagesets(imageset_list)
+            if config.get("download_full_imagesets") and config["download_full_imagesets"]:
+                self.download_imagesets(imageset_list)
+                self.lazy_loading = False
+            else:
+                self.imageset_cache.ensure_subpath_exists('imagesets/')
+                for imageset in imageset_list:
+                    self.imageset_cache.ensure_subpath_exists(f'imagesets/{imageset}')
+                    self.imageset_paths.append(self.imageset_cache.path / 'imagesets' / imageset)
+                self.lazy_loading = True
+
         # local imagesets
         else:
             imageset_paths = config.get('imageset')

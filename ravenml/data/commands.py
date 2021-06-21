@@ -10,7 +10,6 @@ import pydoc
 import yaml
 import shutil
 from pkg_resources import iter_entry_points
-from click_plugins import with_plugins
 from colorama import Fore
 from pathlib import Path
 from ravenml.utils.imageset import get_imageset_names, get_imageset_metadata
