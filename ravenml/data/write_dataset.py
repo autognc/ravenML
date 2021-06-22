@@ -199,12 +199,14 @@ class DefaultDatasetWriter(DatasetWriter):
         metadata_prefix = metadata_format[0]
         metadata_suffix = metadata_format[1]
 
+        # Handle lazy loading case
         if self.lazy_loading:
             bucketConfig = get_config()
             image_bucket_name = bucketConfig.get('image_bucket_name')
             metadata_cond = lambda x : x.startswith(metadata_prefix) and x.endswith(metadata_suffix)
             loop = asyncio.get_event_loop()
 
+            # Download all metadata files in order to enumerate image ids
             for imageset in self.imageset_paths:
                 loop.run_until_complete(conditional_download(image_bucket_name, 
                                                                 os.path.basename(imageset), 
@@ -259,10 +261,12 @@ class DefaultDatasetWriter(DatasetWriter):
         # Updates image_ids with the new information
         self.image_ids = filtered_image_ids
 
+        # If using lazy loading, after this filtering is complete, the images and related files can now be downloaded
         if self.lazy_loading:
             bucketConfig = get_config()
             image_bucket_name = bucketConfig.get('image_bucket_name')
 
+            # Create list of s3 uri and local path for each related file
             files_to_download = [(os.path.basename(image_id[0]) + '/' + file_format[0] + image_id[1] + file_format[1],
                                     str(image_id[0]) + '/' + file_format[0] + image_id[1] + file_format[1]) for image_id in self.image_ids for file_format in associated_files]
 
