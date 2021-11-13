@@ -11,6 +11,8 @@ import shortuuid
 import boto3
 import yaml
 import os
+import inspect
+import ravenml.utils.git as git
 from urllib.request import urlopen
 from urllib.error import URLError
 from pathlib import Path
@@ -18,6 +20,7 @@ from ravenml.train.interfaces import TrainInput, TrainOutput
 from ravenml.utils.question import cli_spinner
 from ravenml.utils.aws import upload_file_to_s3, upload_dict_to_s3_as_json
 from ravenml.utils.plugins import LazyPluginGroup
+from ravenml.utils.config import load_yaml_config
 
 EC2_INSTANCE_ID_URL = 'http://169.254.169.254/latest/meta-data/instance-id'
 
@@ -41,12 +44,8 @@ def train(ctx: click.Context, config: str):
     # check if config flag was passed, if not simply carry on to child command
     if config:
         # attempt to load config
-        try:
-            with open(Path(config), 'r') as stream:
-                train_config = yaml.safe_load(stream)
-        except Exception as e:
-            hint = 'config, no such file exists'
-            raise click.exceptions.BadParameter(config, ctx=ctx, param=config, param_hint=hint)
+        # NOTE: this function will raise a click error if there is an issue loading config
+        train_config = load_yaml_config(Path(config))
         # trigger TrainInput creation, note this may prompt the user depending on the config file used
         ctx.obj = TrainInput(train_config, ctx.invoked_subcommand)
 
@@ -75,6 +74,20 @@ def process_result(ctx: click.Context, result: TrainOutput, config: str):
         # non-training plugin commands, the TrainInput __init__ will be called by Click
         # when process_result runs and no TrainInput is at ctx.obj
         ti = ctx.obj    
+        
+        # store git info for plugin
+        # NOTE: this will fail for plugins not installed via source
+        plugin_repo_root = git.is_repo(result.plugin_dir)
+        git_info = {}
+        if plugin_repo_root:
+            git_info["plugin_git_sha"] = git.git_sha(plugin_repo_root)
+            # note running the patch commands in repo root will include patches for all plugins
+            git_info["plugin_tracked_git_patch"] = git.git_patch_tracked(plugin_repo_root)
+            git_info["plugin_untracked_git_patch"] = git.git_patch_untracked(plugin_repo_root)
+        else:
+            git_info = git.retrieve_from_pkg(result.plugin_dir)
+        ti.metadata.update(git_info)
+
         # upload if not in local mode, determined by user defined artifact_path field in config
         if not ti.config.get('artifact_path'):
             uuid = cli_spinner('Uploading artifacts...', _upload_result, result, ti.metadata, ti.plugin_metadata)

@@ -55,14 +55,13 @@ class CreateInput(object):
         
         ## Set up Local Cache
         # currently the cache_name subdir is only created IF the plugin places files there
-        self.plugin_cache = RMLCache(f'data_{plugin_name}')
         self.imageset_cache = RMLCache()
         
         ## Set up Artifact Path
         dp = config.get('dataset_path')
         if dp is None:
-            self.plugin_cache.ensure_subpath_exists('datasets')
-            self.dataset_path = Path(self.plugin_cache.path / 'datasets')
+            self.imageset_cache.ensure_subpath_exists('datasets')
+            self.dataset_path = Path(self.imageset_cache.path / 'datasets')
         else:
             dp = Path(os.path.expanduser(dp))
             # check if local path contains data
@@ -90,7 +89,7 @@ class CreateInput(object):
                 for imageset in imageset_list:
                     if imageset not in imageset_options:
                         hint = 'imageset name, no such imageset exists on S3'
-                        raise click.exceptions.BadParameter(imageset_list, param=imageset_list, param_hint=hint)
+                        raise click.exceptions.BadParameter(imageset, param=imageset_list, param_hint=hint)
 
             ## Download imagesets
             self.imageset_cache.ensure_subpath_exists('imagesets')
@@ -129,10 +128,15 @@ class CreateInput(object):
         self.metadata['dataset_name'] = config['dataset_name'] if config.get('dataset_name') else user_input(message="What would you like to name this dataset?")
         dir_name = self.dataset_path / self.metadata['dataset_name']
         if os.path.isdir(dir_name):
-            shutil.rmtree(dir_name)
-            os.mkdir(dir_name)
+            if config.get('overwrite_local') or user_confirms('Local artifact storage location contains old data. Overwrite?'):
+                print("WARNING: Deleting existing dataset in cache")
+                shutil.rmtree(dir_name)
+                os.mkdir(dir_name)
+            else:
+                click.echo(Fore.RED + 'Dataset creation cancelled.')
+                click.get_current_context().exit() 
         else:
-            os.mkdir(dir_name)  
+            os.mkdir(dir_name)
         
         ## Set up fields for plugin use
         # NOTE: plugins should overwrite the architecture field to something
